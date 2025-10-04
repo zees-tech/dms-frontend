@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const users = [
     {
         id: '1',
-        email: 'admin@example.com',
-        password: 'password123', // In real app, this should be hashed
+        email: 'zeensr@live.com',
+        password: 'newKnowno.456!', // In real app, this should be hashed
         name: 'Admin User',
         role: 'admin'
     },

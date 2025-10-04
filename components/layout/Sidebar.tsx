@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { colorSchemes } from '@/lib/theme';
+import { useAuth } from '@/contexts/AuthContext';
+import { getRolePrefix } from '@/utils/role-route';
 
 interface MenuItem {
     name: string;
@@ -18,7 +20,7 @@ const menuItems: MenuItem[] = [
     { name: 'Analytics', href: '/analytics', icon: '📈' },
     { name: 'Users', href: '/users', icon: '👥' },
     { name: 'Products', href: '/products', icon: '📦' },
-    { name: 'Orders', href: '/orders', icon: '🛒' },
+    // { name: 'Orders', href: '/orders', icon: '🛒' },
     { name: 'Settings', href: '/settings', icon: '⚙️' },
 ];
 
@@ -26,8 +28,36 @@ export default function Sidebar() {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const pathname = usePathname();
     const { colorScheme, isDark } = useTheme();
+    const { user } = useAuth();
 
     const colors = colorSchemes[colorScheme];
+
+    const userRole = user?.role || 'guest';
+    
+    const rolePrefix = getRolePrefix(userRole);
+
+    // Filter menu items based on user role
+    const roleBasedMenuItems = menuItems.filter((item) => {
+        if (userRole === 'systemAdmin') {
+            // System admin can access everything
+            return item.name === 'System Settings';
+        }
+        if (userRole === 'admin') {
+            // Admin can access all except system admin features
+            return item.name !== 'System Settings';
+        }
+        if (userRole === 'user') {
+            // User can access basic features, no settings
+            return item.name !== 'Settings' && item.name !== 'Users' && item.name !== 'Analytics' && item.name !== 'Dashboard';
+        }
+        return false;
+    });
+
+    // Add role prefix to href
+    const menuItemsWithRolePrefix = roleBasedMenuItems.map(item => ({
+        ...item,
+        href: rolePrefix ? `/${rolePrefix}${item.href}` : item.href
+    }));
 
     return (
         <aside className={`${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
@@ -47,7 +77,7 @@ export default function Sidebar() {
             {/* Navigation */}
             <nav className="flex-1 p-4">
                 <ul className="space-y-2">
-                    {menuItems.map((item) => {
+                    {menuItemsWithRolePrefix.map((item) => {
                         const isActive = pathname === item.href;
 
                         return (

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { colorSchemes } from "@/lib/theme";
+import { getRolePrefix } from "@/utils/role-route";
 
 export default function LoginPage() {
   // ----------- LOGIN LOGIC (UNCHANGED) -----------
@@ -14,18 +15,19 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { colorScheme, isDark } = useTheme();
   const colors = colorSchemes[colorScheme];
   const router = useRouter();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
     try {
       await login(email, password);
-      router.push("/dashboard");
+      const roleRoute = getRolePrefix(user?.role ?? '', "dashboard");
+      router.push(roleRoute);
     } catch {
       setError("Invalid email or password");
     } finally {
@@ -248,92 +250,21 @@ export default function LoginPage() {
                 </div>
               </div>
 
-                    <div>
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${colors.primary} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50`}
-                        >
-                            {isLoading ? 'Signing in...' : 'Sign in'}
-                        </button>
-                    </div>
-
-                    <div className="text-center">
-                        <a href="/register" className={`text-sm ${colors.accent} hover:underline`}>
-                            Don&#39;t have an account? Sign up
-                        </a>
-                    </div>
-                </form>
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    Remember me
-                  </span>
-                </label>
-                <a
-                  href="#"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              <div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${colors.primary} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50`}
                 >
-                  Forgot password?
-                </a>
+                  {isLoading ? 'Signing in...' : 'Sign in'}
+                </button>
               </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                  <svg
-                    className="w-5 h-5 flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-sm font-medium">{error}</span>
-                </div>
-              )}
-
-              {/* Login Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg
-                      className="animate-spin h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Signing in...
-                  </span>
-                ) : (
-                  "Sign in"
-                )}
-              </button>
+              <div className="text-center">
+                <a href="/register" className={`text-sm ${colors.accent} hover:underline`}>
+                  Don&#39;t have an account? Sign up
+                </a>
+              </div>
             </form>
 
             {/* Demo Credentials */}
