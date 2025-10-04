@@ -17,6 +17,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
+    { name: 'Documents', href: '/documents', icon: '📁' },
     { name: 'Analytics', href: '/analytics', icon: '📈' },
     { name: 'Users', href: '/users', icon: '👥' },
     { name: 'Products', href: '/products', icon: '📦' },
