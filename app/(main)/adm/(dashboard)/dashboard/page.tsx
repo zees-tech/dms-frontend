@@ -10,7 +10,7 @@ export default function DashboardPage() {
                         Dashboard
                     </h1>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Welcome back! Here's what's happening.
+                        Welcome back! Here&#39;s what&#39;s happening.
                     </div>
                 </div>
 

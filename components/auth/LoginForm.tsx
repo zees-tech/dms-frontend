@@ -106,7 +106,7 @@ export default function LoginForm() {
 
                     <div className="text-center">
                         <a href="/register" className={`text-sm ${colors.accent} hover:underline`}>
-                            Don't have an account? Sign up
+                            Don&#39;t have an account? Sign up
                         </a>
                     </div>
                 </form>
