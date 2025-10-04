@@ -22,8 +22,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard App",
-  description: "Modern dashboard with dynamic theming",
+  title: "DMS",
+  description: "Modern Document Management System",
 };
 
 export default function RootLayout({
