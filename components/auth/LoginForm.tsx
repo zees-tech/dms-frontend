@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -20,14 +20,18 @@ export default function LoginPage() {
   const colors = colorSchemes[colorScheme];
   const router = useRouter();
 
+  useEffect(() => {
+    if (user) {
+      const rolePrefix = getRolePrefix(user.role);
+      router.push(rolePrefix ? `/${rolePrefix}/dashboard` : '/dashboard');
+    } }, [user, router]);
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
     try {
-      await login(email, password);
-      const roleRoute = getRolePrefix(user?.role ?? '', "dashboard");
-      router.push(roleRoute);
+      await login(email, password);   
     } catch {
       setError("Invalid email or password");
     } finally {
