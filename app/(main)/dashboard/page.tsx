@@ -1,5 +1,6 @@
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Users, DollarSign, Package, TrendingUp, Plus, BarChart3, Settings, MessageCircle } from 'lucide-react';
 
 export default function DashboardPage() {
     return (
@@ -22,7 +23,7 @@ export default function DashboardPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">1,234</p>
                             </div>
-                            <div className="text-3xl">👥</div>
+                            <Users className="w-8 h-8 text-blue-500" />
                         </div>
                         <p className="text-xs text-green-600 dark:text-green-400 mt-2">+12% from last month</p>
                     </div>
@@ -33,7 +34,7 @@ export default function DashboardPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Revenue</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">$12,345</p>
                             </div>
-                            <div className="text-3xl">💰</div>
+                            <DollarSign className="w-8 h-8 text-green-500" />
                         </div>
                         <p className="text-xs text-green-600 dark:text-green-400 mt-2">+8% from last month</p>
                     </div>
@@ -44,7 +45,7 @@ export default function DashboardPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Orders</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">567</p>
                             </div>
-                            <div className="text-3xl">📦</div>
+                            <Package className="w-8 h-8 text-orange-500" />
                         </div>
                         <p className="text-xs text-red-600 dark:text-red-400 mt-2">-3% from last month</p>
                     </div>
@@ -55,7 +56,7 @@ export default function DashboardPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Growth</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">23%</p>
                             </div>
-                            <div className="text-3xl">📈</div>
+                            <TrendingUp className="w-8 h-8 text-purple-500" />
                         </div>
                         <p className="text-xs text-green-600 dark:text-green-400 mt-2">+5% from last month</p>
                     </div>
@@ -92,19 +93,19 @@ export default function DashboardPage() {
                         </h3>
                         <div className="grid grid-cols-2 gap-4">
                             <button className="p-4 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <div className="text-2xl mb-2">➕</div>
+                                <Plus className="w-6 h-6 mb-2 text-blue-500" />
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">Add User</div>
                             </button>
                             <button className="p-4 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <div className="text-2xl mb-2">📊</div>
+                                <BarChart3 className="w-6 h-6 mb-2 text-green-500" />
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">View Reports</div>
                             </button>
                             <button className="p-4 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <div className="text-2xl mb-2">⚙️</div>
+                                <Settings className="w-6 h-6 mb-2 text-gray-500" />
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">Settings</div>
                             </button>
                             <button className="p-4 text-left rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-                                <div className="text-2xl mb-2">💬</div>
+                                <MessageCircle className="w-6 h-6 mb-2 text-purple-500" />
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">Support</div>
                             </button>
                         </div>

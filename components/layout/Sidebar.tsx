@@ -7,22 +7,22 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { colorSchemes } from '@/lib/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRolePrefix } from '@/utils/role-route';
+import { BarChart3, FileText, TrendingUp, Users, Package, Settings, Menu, HelpCircle, LucideIcon } from 'lucide-react';
 
 interface MenuItem {
     name: string;
     href: string;
-    icon: string;
+    icon: LucideIcon;
     children?: MenuItem[];
 }
 
 const menuItems: MenuItem[] = [
-    { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-    { name: 'Documents', href: '/documents', icon: '📁' },
-    { name: 'Analytics', href: '/analytics', icon: '📈' },
-    { name: 'Users', href: '/users', icon: '👥' },
-    { name: 'Products', href: '/products', icon: '📦' },
-    // { name: 'Orders', href: '/orders', icon: '🛒' },
-    { name: 'Settings', href: '/settings', icon: '⚙️' },
+    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+    { name: 'Documents', href: '/documents', icon: FileText },
+    { name: 'Analytics', href: '/analytics', icon: TrendingUp },
+    { name: 'Users', href: '/users', icon: Users },
+    { name: 'Products', href: '/products', icon: Package },
+    { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -34,7 +34,7 @@ export default function Sidebar() {
     const colors = colorSchemes[colorScheme];
 
     const userRole = user?.role || 'guest';
-    
+
     const rolePrefix = getRolePrefix(userRole);
 
     // Filter menu items based on user role
@@ -71,7 +71,7 @@ export default function Sidebar() {
                         } p-2 rounded-lg`}
                 >
                     {!isCollapsed && <span className="font-semibold">Menu</span>}
-                    <span className="text-lg">☰</span>
+                    <Menu className="w-5 h-5" />
                 </button>
             </div>
 
@@ -86,13 +86,13 @@ export default function Sidebar() {
                                 <Link
                                     href={item.href}
                                     className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
-                                            ? `${colors.primary} text-white`
-                                            : isDark
-                                                ? 'text-gray-300 hover:bg-gray-800'
-                                                : 'text-gray-700 hover:bg-gray-100'
+                                        ? `${colors.primary} text-white`
+                                        : isDark
+                                            ? 'text-gray-300 hover:bg-gray-800'
+                                            : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                 >
-                                    <span className="text-lg">{item.icon}</span>
+                                    <item.icon className="w-5 h-5" />
                                     {!isCollapsed && (
                                         <span className="font-medium">{item.name}</span>
                                     )}
@@ -107,7 +107,7 @@ export default function Sidebar() {
             <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                 <div className={`flex items-center space-x-3 ${isDark ? 'text-gray-400' : 'text-gray-600'
                     }`}>
-                    <span className="text-lg">💡</span>
+                    <HelpCircle className="w-5 h-5" />
                     {!isCollapsed && (
                         <div>
                             <p className="text-sm font-medium">Need help?</p>

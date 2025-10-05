@@ -7,6 +7,9 @@ export interface Folder {
   createdAt: string;
   updatedAt: string;
   children?: (Folder | File)[];
+  color?: string;
+  description?: string;
+  isStarred?: boolean;
 }
 
 export interface File {
@@ -20,6 +23,9 @@ export interface File {
   createdAt: string;
   updatedAt: string;
   url?: string;
+  tags?: string[];
+  description?: string;
+  isStarred?: boolean;
 }
 
 export type FileSystemItem = Folder | File;
@@ -42,28 +48,67 @@ export const mockFileSystem: Folder = {
       parentId: 'root',
       createdAt: '2024-01-02T00:00:00Z',
       updatedAt: '2024-01-02T00:00:00Z',
+      color: '#3B82F6',
       children: [
         {
-          id: 'file1',
-          name: 'project-plan',
-          type: 'file',
-          size: 1024,
-          mimeType: 'application/pdf',
-          extension: 'pdf',
-          folderId: 'folder1',
-          createdAt: '2024-01-03T00:00:00Z',
-          updatedAt: '2024-01-03T00:00:00Z',
+          id: 'subfolder1',
+          name: 'Web Development',
+          type: 'folder',
+          path: '/Projects/Web Development',
+          parentId: 'folder1',
+          createdAt: '2024-01-08T00:00:00Z',
+          updatedAt: '2024-01-08T00:00:00Z',
+          color: '#10B981',
+          children: [
+            {
+              id: 'file1',
+              name: 'project-plan',
+              type: 'file',
+              size: 1024000,
+              mimeType: 'application/pdf',
+              extension: 'pdf',
+              folderId: 'subfolder1',
+              createdAt: '2024-01-03T00:00:00Z',
+              updatedAt: '2024-01-03T00:00:00Z',
+              tags: ['planning', 'important'],
+            },
+            {
+              id: 'file2',
+              name: 'requirements',
+              type: 'file',
+              size: 2048000,
+              mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              extension: 'docx',
+              folderId: 'subfolder1',
+              createdAt: '2024-01-04T00:00:00Z',
+              updatedAt: '2024-01-04T00:00:00Z',
+              tags: ['documentation'],
+            }
+          ]
         },
         {
-          id: 'file2',
-          name: 'requirements',
-          type: 'file',
-          size: 2048,
-          mimeType: 'application/vnd.ms-word',
-          extension: 'docx',
-          folderId: 'folder1',
-          createdAt: '2024-01-04T00:00:00Z',
-          updatedAt: '2024-01-04T00:00:00Z',
+          id: 'subfolder2',
+          name: 'Mobile Apps',
+          type: 'folder',
+          path: '/Projects/Mobile Apps',
+          parentId: 'folder1',
+          createdAt: '2024-01-09T00:00:00Z',
+          updatedAt: '2024-01-09T00:00:00Z',
+          color: '#8B5CF6',
+          children: [
+            {
+              id: 'file5',
+              name: 'app-mockups',
+              type: 'file',
+              size: 5120000,
+              mimeType: 'image/png',
+              extension: 'png',
+              folderId: 'subfolder2',
+              createdAt: '2024-01-10T00:00:00Z',
+              updatedAt: '2024-01-10T00:00:00Z',
+              tags: ['design', 'mockup'],
+            }
+          ]
         }
       ]
     },
@@ -75,17 +120,67 @@ export const mockFileSystem: Folder = {
       parentId: 'root',
       createdAt: '2024-01-05T00:00:00Z',
       updatedAt: '2024-01-05T00:00:00Z',
+      color: '#F59E0B',
       children: [
         {
-          id: 'file3',
-          name: 'monthly-report',
+          id: 'subfolder3',
+          name: '2024',
+          type: 'folder',
+          path: '/Reports/2024',
+          parentId: 'folder2',
+          createdAt: '2024-01-11T00:00:00Z',
+          updatedAt: '2024-01-11T00:00:00Z',
+          children: [
+            {
+              id: 'file3',
+              name: 'monthly-report-january',
+              type: 'file',
+              size: 1536000,
+              mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              extension: 'xlsx',
+              folderId: 'subfolder3',
+              createdAt: '2024-01-06T00:00:00Z',
+              updatedAt: '2024-01-06T00:00:00Z',
+              tags: ['report', 'monthly'],
+            },
+            {
+              id: 'file6',
+              name: 'quarterly-summary',
+              type: 'file',
+              size: 3072000,
+              mimeType: 'application/pdf',
+              extension: 'pdf',
+              folderId: 'subfolder3',
+              createdAt: '2024-01-12T00:00:00Z',
+              updatedAt: '2024-01-12T00:00:00Z',
+              tags: ['report', 'quarterly'],
+              isStarred: true,
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'folder3',
+      name: 'Media',
+      type: 'folder',
+      path: '/Media',
+      parentId: 'root',
+      createdAt: '2024-01-13T00:00:00Z',
+      updatedAt: '2024-01-13T00:00:00Z',
+      color: '#EF4444',
+      children: [
+        {
+          id: 'file7',
+          name: 'presentation-video',
           type: 'file',
-          size: 1536,
-          mimeType: 'application/vnd.ms-excel',
-          extension: 'xlsx',
-          folderId: 'folder2',
-          createdAt: '2024-01-06T00:00:00Z',
-          updatedAt: '2024-01-06T00:00:00Z',
+          size: 15728640, // 15MB
+          mimeType: 'video/mp4',
+          extension: 'mp4',
+          folderId: 'folder3',
+          createdAt: '2024-01-14T00:00:00Z',
+          updatedAt: '2024-01-14T00:00:00Z',
+          tags: ['video', 'presentation'],
         }
       ]
     },
@@ -99,6 +194,7 @@ export const mockFileSystem: Folder = {
       folderId: 'root',
       createdAt: '2024-01-07T00:00:00Z',
       updatedAt: '2024-01-07T00:00:00Z',
+      tags: ['documentation'],
     }
   ]
 };

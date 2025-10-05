@@ -1,106 +1,492 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import FolderTree from '@/components/documents/FolderTree';
-import FileList from '@/components/documents/FileList';
-import Breadcrumb from '@/components/documents/Breadcrumb';
-import { mockFileSystem, Folder, File } from '@/types/file-system';
+import { useMemo, useState } from "react";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Plus, Upload } from 'lucide-react';
+import FolderTree from "@/components/documents/FolderTree";
+import FileList from "@/components/documents/FileList";
+import Breadcrumb from "@/components/documents/Breadcrumb";
+import DocumentActionsPanel from "@/components/documents/DocumentActionsPanel";
+import CreateFolderModal from "@/components/documents/CreateFolderModal";
+import FileUploadDrawer from "@/components/documents/FileUploadDrawer";
+import SearchAndFilter from "@/components/documents/SearchAndFilter";
+import ToastContainer from "@/components/ui/ToastContainer";
+import { mockFileSystem, Folder, File } from "@/types/file-system";
+import { useToast } from "@/hooks/useToast";
 
 export default function DocumentsPage() {
+  const [fileSystem, setFileSystem] = useState<Folder>(mockFileSystem);
   const [currentFolder, setCurrentFolder] = useState<Folder>(mockFileSystem);
   const [breadcrumb, setBreadcrumb] = useState<Folder[]>([mockFileSystem]);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [isUploadDrawerOpen, setIsUploadDrawerOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({
+    fileType: '',
+    dateRange: '',
+    size: '',
+  });
+  const { pushToast } = useToast();
 
   const handleFolderClick = (folder: Folder) => {
     setCurrentFolder(folder);
     // Update breadcrumb - find the path to this folder
     const newBreadcrumb: Folder[] = [];
     let current: Folder | null = folder;
-    
+
     while (current) {
       newBreadcrumb.unshift(current);
       // Find parent in the file system
       if (current.parentId) {
-        current = findFolderById(mockFileSystem, current.parentId);
+        current = findFolderById(fileSystem, current.parentId);
       } else {
         current = null;
       }
     }
-    
+
     setBreadcrumb(newBreadcrumb);
   };
 
   const handleBreadcrumbClick = (folder: Folder) => {
     setCurrentFolder(folder);
-    const folderIndex = breadcrumb.findIndex(f => f.id === folder.id);
+    const folderIndex = breadcrumb.findIndex((f) => f.id === folder.id);
     setBreadcrumb(breadcrumb.slice(0, folderIndex + 1));
   };
 
   const findFolderById = (root: Folder, id: string): Folder | null => {
     if (root.id === id) return root;
-    
+
     if (root.children) {
       for (const child of root.children) {
-        if (child.type === 'folder') {
+        if (child.type === "folder") {
           const found = findFolderById(child, id);
           if (found) return found;
         }
       }
     }
-    
+
     return null;
   };
 
-  const folders = currentFolder.children?.filter(item => item.type === 'folder') as Folder[] || [];
-  const files = currentFolder.children?.filter(item => item.type === 'file') as File[] || [];
+  const updateFolder = (root: Folder, updatedFolder: Folder): Folder => {
+    if (root.id === updatedFolder.id) {
+      return {
+        ...updatedFolder,
+        children: updatedFolder.children
+          ? [...updatedFolder.children]
+          : undefined,
+      };
+    }
+
+    if (!root.children) return root;
+
+    return {
+      ...root,
+      children: root.children.map((child) => {
+        if (child.type === "file") return child;
+        return updateFolder(child, updatedFolder);
+      }),
+    };
+  };
+
+  const upsertChild = (
+    root: Folder,
+    parentId: string,
+    child: Folder | File
+  ): Folder => {
+    if (root.id === parentId) {
+      const existingChildren = root.children ? [...root.children] : [];
+      const childIndex = existingChildren.findIndex(
+        (item) => item.id === child.id
+      );
+
+      if (childIndex > -1) {
+        existingChildren[childIndex] = child;
+      } else {
+        existingChildren.push(child);
+      }
+
+      return {
+        ...root,
+        children: existingChildren,
+      };
+    }
+
+    if (!root.children) return root;
+
+    return {
+      ...root,
+      children: root.children.map((item) => {
+        if (item.type === "file") return item;
+        return upsertChild(item, parentId, child);
+      }),
+    };
+  };
+
+  const removeChild = (root: Folder, targetId: string): Folder => {
+    if (!root.children) return root;
+
+    const filteredChildren = root.children
+      .filter((child) => child.id !== targetId)
+      .map((child) => {
+        if (child.type === "file") return child;
+        return removeChild(child, targetId);
+      });
+
+    return {
+      ...root,
+      children: filteredChildren,
+    };
+  };
+
+  const calculateFolderAndFileCounts = (
+    folder: Folder
+  ): { folderCount: number; fileCount: number; totalSize: number } => {
+    let folderCount = 0;
+    let fileCount = 0;
+    let totalSize = 0;
+
+    folder.children?.forEach((child) => {
+      if (child.type === "folder") {
+        folderCount += 1;
+        const nestedCounts = calculateFolderAndFileCounts(child);
+        folderCount += nestedCounts.folderCount;
+        fileCount += nestedCounts.fileCount;
+        totalSize += nestedCounts.totalSize;
+      } else {
+        fileCount += 1;
+        totalSize += child.size;
+      }
+    });
+
+    return { folderCount, fileCount, totalSize };
+  };
+
+  const mergeFolderUpdates = (
+    root: Folder,
+    targetId: string,
+    updatedChildren: (Folder | File)[]
+  ): Folder => {
+    if (root.id === targetId) {
+      return {
+        ...root,
+        children: updatedChildren,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    if (!root.children) return root;
+
+    return {
+      ...root,
+      children: root.children.map((child) => {
+        if (child.type === "file") return child;
+        return mergeFolderUpdates(child, targetId, updatedChildren);
+      }),
+    };
+  };
+
+  const rootStats = useMemo(
+    () => calculateFolderAndFileCounts(fileSystem),
+    [fileSystem]
+  );
+  const nestedStats = useMemo(
+    () => calculateFolderAndFileCounts(currentFolder),
+    [currentFolder]
+  );
+
+  const openCreateFolder = () => setIsFolderModalOpen(true);
+  const closeCreateFolder = () => setIsFolderModalOpen(false);
+  const openUploadDrawer = () => setIsUploadDrawerOpen(true);
+  const closeUploadDrawer = () => setIsUploadDrawerOpen(false);
+
+  const handleCreateFolder = async (name: string, parentId: string) => {
+    const newFolder: Folder = {
+      id: Math.random().toString(36).substr(2, 9),
+      name,
+      type: 'folder',
+      path: currentFolder.path === '/' ? `/${name}` : `${currentFolder.path}/${name}`,
+      parentId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      children: [],
+    };
+
+    const updatedFileSystem = upsertChild(fileSystem, parentId, newFolder);
+    setFileSystem(updatedFileSystem);
+
+    // Update current folder if it's the parent
+    if (currentFolder.id === parentId) {
+      const updatedCurrentFolder = findFolderById(updatedFileSystem, parentId);
+      if (updatedCurrentFolder) {
+        setCurrentFolder(updatedCurrentFolder);
+      }
+    }
+
+    pushToast({
+      message: `Folder "${name}" created successfully`,
+      type: 'success',
+    });
+  };
+
+  const handleUploadFiles = async (files: FileList, folderId: string) => {
+    const newFiles: File[] = Array.from(files).map((file) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+      type: 'file',
+      size: file.size,
+      mimeType: file.type || 'application/octet-stream',
+      extension: file.name.split('.').pop() || '',
+      folderId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      url: URL.createObjectURL(file), // For demo purposes
+    }));
+
+    let updatedFileSystem = fileSystem;
+    newFiles.forEach((file) => {
+      updatedFileSystem = upsertChild(updatedFileSystem, folderId, file);
+    });
+
+    setFileSystem(updatedFileSystem);
+
+    // Update current folder if it's the target
+    if (currentFolder.id === folderId) {
+      const updatedCurrentFolder = findFolderById(updatedFileSystem, folderId);
+      if (updatedCurrentFolder) {
+        setCurrentFolder(updatedCurrentFolder);
+      }
+    }
+
+    pushToast({
+      message: `${newFiles.length} file(s) uploaded successfully`,
+      type: 'success',
+    });
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleFilter = (newFilters: {
+    fileType?: string;
+    dateRange?: string;
+    size?: string;
+  }) => {
+    setFilters({
+      fileType: newFilters.fileType || '',
+      dateRange: newFilters.dateRange || '',
+      size: newFilters.size || '',
+    });
+  };
+
+  // Filter files and folders based on search and filters
+  const filteredFolders = useMemo(() => {
+    let result = currentFolder.children?.filter(item => item.type === 'folder') as Folder[] || [];
+
+    if (searchQuery) {
+      result = result.filter(folder =>
+        folder.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return result;
+  }, [currentFolder.children, searchQuery]);
+
+  const filteredFiles = useMemo(() => {
+    let result = currentFolder.children?.filter(item => item.type === 'file') as File[] || [];
+
+    if (searchQuery) {
+      result = result.filter(file =>
+        file.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply filters
+    if (filters.fileType) {
+      result = result.filter(file => {
+        switch (filters.fileType) {
+          case 'pdf': return file.mimeType.includes('pdf');
+          case 'image': return file.mimeType.includes('image');
+          case 'document': return file.mimeType.includes('word') || file.mimeType.includes('text');
+          case 'spreadsheet': return file.mimeType.includes('excel') || file.mimeType.includes('sheet');
+          case 'video': return file.mimeType.includes('video');
+          case 'audio': return file.mimeType.includes('audio');
+          default: return true;
+        }
+      });
+    }
+
+    if (filters.size) {
+      result = result.filter(file => {
+        switch (filters.size) {
+          case 'small': return file.size < 1024 * 1024; // < 1MB
+          case 'medium': return file.size >= 1024 * 1024 && file.size <= 10 * 1024 * 1024; // 1-10MB
+          case 'large': return file.size > 10 * 1024 * 1024; // > 10MB
+          default: return true;
+        }
+      });
+    }
+
+    return result;
+  }, [currentFolder.children, searchQuery, filters]);
+
+  const folders = filteredFolders;
+  const files = filteredFiles;
+
+  const stats = {
+    totalFolders: nestedStats.folderCount,
+    totalFiles: files.length,
+    totalSize: nestedStats.totalSize,
+    rootFolderCount: rootStats.folderCount,
+    rootFileCount: rootStats.fileCount,
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Documents
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Manage your files and folders
-            </p>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-900/20 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300">
+              <span
+                className="inline-flex h-2 w-2 rounded-full bg-blue-500"
+                aria-hidden
+              />
+              Smart workspace
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                Documents
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-xl">
+                Organize your documents effortlessly with nested folders,
+                instant uploads, and modern controls.
+              </p>
+            </div>
           </div>
+
+          <DocumentActionsPanel
+            onCreateFolder={openCreateFolder}
+            onUploadFiles={openUploadDrawer}
+            stats={stats}
+            currentFolderName={currentFolder.name}
+          />
         </div>
 
         {/* Breadcrumb */}
-        <Breadcrumb 
-          items={breadcrumb} 
-          onItemClick={handleBreadcrumbClick}
-        />
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur p-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <Breadcrumb
+              items={breadcrumb}
+              onItemClick={handleBreadcrumbClick}
+            />
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                <span
+                  className="inline-flex h-2 w-2 rounded-full bg-blue-500"
+                  aria-hidden
+                />
+                Active folder:{" "}
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {currentFolder.name}
+                </span>
+              </div>
+              <div
+                className="hidden sm:inline-flex h-4 w-px bg-gray-200 dark:bg-gray-700"
+                aria-hidden
+              />
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                <span
+                  className="inline-flex h-2 w-2 rounded-full bg-violet-500"
+                  aria-hidden
+                />
+                {files.length} files
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Filter */}
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur p-4">
+          <SearchAndFilter
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            totalResults={folders.length + files.length}
+          />
+        </div>
 
         {/* Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6">
           {/* Folders Section */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Folders ({folders.length})
-              </h2>
-              <FolderTree 
-                folders={folders}
-                onFolderClick={handleFolderClick}
-              />
+          <div className="space-y-6">
+            <div className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+            >
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Nested Folders
+                  </h2>
+                  <button
+                    onClick={openCreateFolder}
+                    className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300 transition-colors hover:bg-blue-500/20"
+                    aria-label="Create nested folder"
+                  >
+                    <Plus className="w-4 h-4" /> Add folder
+                  </button>
+                </div>
+                <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 p-4 max-h-[420px] overflow-y-auto shadow-inner">
+                  <FolderTree
+                    folders={folders}
+                    onFolderClick={handleFolderClick}
+                    activeFolderId={currentFolder.id}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Files Section */}
-          <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Files ({files.length})
-              </h2>
-              <FileList files={files} />
+          <div className="space-y-6">
+            <div className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-violet-300 dark:hover:border-violet-600 transition-colors"
+            >
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Files in “{currentFolder.name}”
+                  </h2>
+                  <button
+                    onClick={openUploadDrawer}
+                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-600 dark:text-violet-300 transition-colors hover:bg-violet-500/20"
+                    aria-label="Upload documents"
+                  >
+                    <Upload className="w-4 h-4" /> Upload
+                  </button>
+                </div>
+                <FileList files={files} />
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateFolderModal
+        isOpen={isFolderModalOpen}
+        onClose={closeCreateFolder}
+        onCreateFolder={handleCreateFolder}
+        currentFolder={currentFolder}
+      />
+
+      <FileUploadDrawer
+        isOpen={isUploadDrawerOpen}
+        onClose={closeUploadDrawer}
+        onUploadFiles={handleUploadFiles}
+        currentFolder={currentFolder}
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer />
     </DashboardLayout>
   );
 }
