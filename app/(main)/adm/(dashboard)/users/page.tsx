@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Modal, Form, Input, Select, Button, Row, Col, message } from "antd";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 // Type definitions
@@ -53,6 +54,7 @@ export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("users");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [form] = Form.useForm();
 
   const [users, setUsers] = useState<User[]>([
     {
@@ -85,19 +87,11 @@ export default function UsersPage() {
     { id: 3, name: "Sales" },
   ]);
 
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    email: "",
-    role: "",
-    department: "",
-    status: "Active",
-  });
-
   const openModal = (item: User | Role | Department | null = null) => {
     if (item) {
       setEditingId(item.id);
       if (activeTab === "users" && 'email' in item) {
-        setFormData({
+        form.setFieldsValue({
           name: item.name,
           email: item.email,
           role: item.role,
@@ -105,23 +99,18 @@ export default function UsersPage() {
           status: item.status,
         });
       } else {
-        setFormData({
+        form.setFieldsValue({
           name: item.name,
-          email: "",
-          role: "",
-          department: "",
-          status: "Active",
         });
       }
     } else {
       setEditingId(null);
-      setFormData({
-        name: "",
-        email: "",
-        role: roles[0]?.name || "",
-        department: departments[0]?.name || "",
-        status: "Active",
-      });
+      form.resetFields();
+      if (activeTab === "users") {
+        form.setFieldsValue({
+          status: "Active",
+        });
+      }
     }
     setIsModalOpen(true);
   };
@@ -129,57 +118,58 @@ export default function UsersPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
-    setFormData({
-      name: "",
-      email: "",
-      role: "",
-      department: "",
-      status: "Active",
-    });
+    form.resetFields();
   };
 
-  const handleSubmit = () => {
-    if (!formData.name.trim()) return;
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
 
-    if (activeTab === "users") {
-      if (!formData.email.trim() || !formData.role || !formData.department)
-        return;
+      if (activeTab === "users") {
+        if (editingId) {
+          setUsers(
+            users.map((user) =>
+              user.id === editingId ? { ...user, ...values } : user
+            )
+          );
+          message.success('User updated successfully');
+        } else {
+          setUsers([...users, { id: Date.now(), ...values }]);
+          message.success('User created successfully');
+        }
+      } else if (activeTab === "roles") {
+        if (editingId) {
+          setRoles(
+            roles.map((role) =>
+              role.id === editingId ? { ...role, name: values.name } : role
+            )
+          );
+          message.success('Role updated successfully');
+        } else {
+          setRoles([...roles, { id: Date.now(), name: values.name }]);
+          message.success('Role created successfully');
+        }
+      } else if (activeTab === "departments") {
+        if (editingId) {
+          setDepartments(
+            departments.map((dept) =>
+              dept.id === editingId ? { ...dept, name: values.name } : dept
+            )
+          );
+          message.success('Department updated successfully');
+        } else {
+          setDepartments([
+            ...departments,
+            { id: Date.now(), name: values.name },
+          ]);
+          message.success('Department created successfully');
+        }
+      }
 
-      if (editingId) {
-        setUsers(
-          users.map((user) =>
-            user.id === editingId ? { ...user, ...formData } : user
-          )
-        );
-      } else {
-        setUsers([...users, { id: Date.now(), ...formData }]);
-      }
-    } else if (activeTab === "roles") {
-      if (editingId) {
-        setRoles(
-          roles.map((role) =>
-            role.id === editingId ? { ...role, name: formData.name } : role
-          )
-        );
-      } else {
-        setRoles([...roles, { id: Date.now(), name: formData.name }]);
-      }
-    } else if (activeTab === "departments") {
-      if (editingId) {
-        setDepartments(
-          departments.map((dept) =>
-            dept.id === editingId ? { ...dept, name: formData.name } : dept
-          )
-        );
-      } else {
-        setDepartments([
-          ...departments,
-          { id: Date.now(), name: formData.name },
-        ]);
-      }
+      closeModal();
+    } catch (error) {
+      console.error('Validation failed:', error);
     }
-
-    closeModal();
   };
 
   const handleDelete = (id: number) => {
@@ -210,8 +200,8 @@ export default function UsersPage() {
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`pb-2 text-sm font-medium ${activeTab === tab
-                      ? "text-blue-600 border-b-2 border-blue-600"
-                      : "text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-800 dark:hover:text-white"
                     }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -254,144 +244,125 @@ export default function UsersPage() {
           />
         )}
 
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md p-6">
-              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                {editingId ? "Edit" : "Add"}{" "}
-                {activeTab === "users"
-                  ? "User"
-                  : activeTab === "roles"
-                    ? "Role"
-                    : "Department"}
-              </h2>
-
-              <div className="space-y-4">
-                {activeTab === "users" && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData({ ...formData, name: e.target.value })
-                        }
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 dark:bg-gray-700 dark:text-white"
-                        placeholder="Enter name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 dark:bg-gray-700 dark:text-white"
-                        placeholder="Enter email"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Role
-                      </label>
-                      <select
-                        value={formData.role}
-                        onChange={(e) =>
-                          setFormData({ ...formData, role: e.target.value })
-                        }
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="">Select Role</option>
+        <Modal
+          title={`${editingId ? "Edit" : "Add"} ${activeTab === "users"
+            ? "User"
+            : activeTab === "roles"
+              ? "Role"
+              : "Department"
+            }`}
+          open={isModalOpen}
+          onCancel={closeModal}
+          footer={null}
+          width={activeTab === "users" ? 600 : 400}
+        >
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+          >
+            {activeTab === "users" && (
+              <>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="name"
+                      label="Name"
+                      rules={[{ required: true, message: 'Please enter name' }]}
+                    >
+                      <Input placeholder="Enter name" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="email"
+                      label="Email"
+                      rules={[
+                        { required: true, message: 'Please enter email' },
+                        { type: 'email', message: 'Please enter valid email' }
+                      ]}
+                    >
+                      <Input placeholder="Enter email" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="role"
+                      label="Role"
+                      rules={[{ required: true, message: 'Please select role' }]}
+                    >
+                      <Select placeholder="Select Role">
                         {roles.map((role) => (
-                          <option key={role.id} value={role.name}>
+                          <Select.Option key={role.id} value={role.name}>
                             {role.name}
-                          </option>
+                          </Select.Option>
                         ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Department
-                      </label>
-                      <select
-                        value={formData.department}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            department: e.target.value,
-                          })
-                        }
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="">Select Department</option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="department"
+                      label="Department"
+                      rules={[{ required: true, message: 'Please select department' }]}
+                    >
+                      <Select placeholder="Select Department">
                         {departments.map((dept) => (
-                          <option key={dept.id} value={dept.name}>
+                          <Select.Option key={dept.id} value={dept.name}>
                             {dept.name}
-                          </option>
+                          </Select.Option>
                         ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Status
-                      </label>
-                      <select
-                        value={formData.status}
-                        onChange={(e) =>
-                          setFormData({ ...formData, status: e.target.value })
-                        }
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option>Active</option>
-                        <option>Inactive</option>
-                      </select>
-                    </div>
-                  </>
-                )}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col span={24}>
+                    <Form.Item
+                      name="status"
+                      label="Status"
+                      rules={[{ required: true, message: 'Please select status' }]}
+                    >
+                      <Select>
+                        <Select.Option value="Active">Active</Select.Option>
+                        <Select.Option value="Inactive">Inactive</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </>
+            )}
 
-                {(activeTab === "roles" || activeTab === "departments") && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {activeTab === "roles" ? "Role Name" : "Department Name"}
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-2 dark:bg-gray-700 dark:text-white"
-                      placeholder={`Enter ${activeTab === "roles" ? "role" : "department"
-                        } name`}
-                    />
-                  </div>
-                )}
+            {(activeTab === "roles" || activeTab === "departments") && (
+              <Row>
+                <Col span={24}>
+                  <Form.Item
+                    name="name"
+                    label={activeTab === "roles" ? "Role Name" : "Department Name"}
+                    rules={[{ required: true, message: `Please enter ${activeTab === "roles" ? "role" : "department"} name` }]}
+                  >
+                    <Input placeholder={`Enter ${activeTab === "roles" ? "role" : "department"} name`} />
+                  </Form.Item>
+                </Col>
+              </Row>
+            )}
 
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={handleSubmit}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-                  >
-                    {editingId ? "Update" : "Save"}
-                  </button>
-                  <button
-                    onClick={closeModal}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+            <Row gutter={16} style={{ marginTop: 16 }}>
+              <Col span={12}>
+                <Button type="primary" htmlType="submit" block>
+                  {editingId ? "Update" : "Save"}
+                </Button>
+              </Col>
+              <Col span={12}>
+                <Button onClick={closeModal} block>
+                  Cancel
+                </Button>
+              </Col>
+            </Row>
+          </Form>
+        </Modal>
       </div>
     </DashboardLayout>
   );
@@ -461,8 +432,8 @@ function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === "Active"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
                       }`}
                   >
                     {user.status}
