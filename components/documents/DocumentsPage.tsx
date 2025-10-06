@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Upload } from 'lucide-react';
 import FolderTree from "@/components/documents/FolderTree";
-import FileList from "@/components/documents/FileList";
+import FolderView from "@/components/documents/FolderView";
 import Breadcrumb from "@/components/documents/Breadcrumb";
 import DocumentActionsPanel from "@/components/documents/DocumentActionsPanel";
 import CreateFolderModal from "@/components/documents/CreateFolderModal";
@@ -346,7 +346,7 @@ export default function DocumentsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        {/* <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-900/20 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300">
               <span
@@ -372,7 +372,7 @@ export default function DocumentsPage() {
             stats={stats}
             currentFolderName={currentFolder.name}
           />
-        </div>
+        </div> */}
 
         {/* Breadcrumb */}
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur p-4">
@@ -408,24 +408,23 @@ export default function DocumentsPage() {
         </div>
 
         {/* Search and Filter */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur p-4">
+        {/* <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur p-4">
           <SearchAndFilter
             onSearch={handleSearch}
             onFilter={handleFilter}
             totalResults={folders.length + files.length}
           />
-        </div>
+        </div> */}
 
         {/* Content */}
         <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6">
           {/* Folders Section */}
           <div className="space-y-6">
-            <div className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
-            >
-              <div className="relative p-6">
+            <div className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
+              {/* <div className="relative p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Nested Folders
+                    Documents
                   </h2>
                   <button
                     onClick={openCreateFolder}
@@ -436,12 +435,20 @@ export default function DocumentsPage() {
                   </button>
                 </div>
                 <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 p-4 max-h-[420px] overflow-y-auto shadow-inner">
-                  <FolderTree
-                    folders={folders}
+              <FolderTree
+                    folders={[fileSystem]}
                     onFolderClick={handleFolderClick}
                     activeFolderId={currentFolder.id}
                   />
                 </div>
+              </div> */}
+
+              <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 p-4 max-h-[420px] overflow-y-auto shadow-inner">
+                <FolderTree
+                  folders={[fileSystem]}
+                  onFolderClick={handleFolderClick}
+                  activeFolderId={currentFolder.id}
+                />
               </div>
             </div>
           </div>
@@ -453,17 +460,29 @@ export default function DocumentsPage() {
               <div className="relative p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Files in “{currentFolder.name}”
+                    {currentFolder.name}
                   </h2>
-                  <button
-                    onClick={openUploadDrawer}
-                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-600 dark:text-violet-300 transition-colors hover:bg-violet-500/20"
-                    aria-label="Upload documents"
-                  >
-                    <Upload className="w-4 h-4" /> Upload
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={openCreateFolder}
+                      className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300 transition-colors hover:bg-blue-500/20"
+                      aria-label="Create nested folder"
+                    >
+                      <Plus className="w-4 h-4" /> Add folder
+                    </button>
+                    <button
+                      onClick={openUploadDrawer}
+                      className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-600 dark:text-violet-300 transition-colors hover:bg-violet-500/20"
+                      aria-label="Upload documents"
+                    >
+                      <Upload className="w-4 h-4" /> Upload
+                    </button>
+                  </div>
                 </div>
-                <FileList files={files} />
+                <FolderView
+                  folder={currentFolder}
+                  onFolderClick={handleFolderClick}
+                />
               </div>
             </div>
           </div>

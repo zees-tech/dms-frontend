@@ -19,9 +19,8 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'Documents', href: '/documents', icon: FileText },
-    { name: 'Analytics', href: '/analytics', icon: TrendingUp },
+    // { name: 'Analytics', href: '/analytics', icon: TrendingUp },
     { name: 'Users', href: '/users', icon: Users },
-    { name: 'Products', href: '/products', icon: Package },
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

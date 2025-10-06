@@ -65,16 +65,16 @@ export default function FolderTree({
         return (
           <div key={folder.id} className="relative">
             {/* Connecting lines */}
-            {level > 0 && (
+            {/* {level > 0 && (
               <div
-                className="absolute left-0 top-0 bottom-0 w-4 border-l border-gray-300 dark:border-gray-600"
+                className="absolute left-0 top-0 bottom-0 w-4 border-l border-gray-300 dark:border-gray-600 py-1"
                 style={{
                   marginLeft: `${(level - 1) * 16}px`,
                   borderLeft: parentHasMoreSiblings ? "1px solid" : "none",
                   borderColor: "rgb(156 163 175)",
                 }}
               />
-            )}
+            )} */}
 
             {/* Folder Item */}
             <div
@@ -84,7 +84,7 @@ export default function FolderTree({
                 } ${level > 0 ? "pl-4" : ""}`}
               onClick={() => handleFolderClick(folder)}
               style={{
-                paddingLeft: `${level * 16 + 8}px`,
+                marginLeft: `${level * 16 + 8}px`,
               }}
             >
               {/* Expand/Collapse Icon with connecting line */}
@@ -130,7 +130,7 @@ export default function FolderTree({
             {/* Subfolders */}
             {isExpanded && hasSubfolders && (
               <div
-                className={`ml-1 border-l-2 ${activeFolderId === folder.id
+                className={` ${activeFolderId === folder.id
                   ? "border-blue-400/60 dark:border-blue-500/60"
                   : "border-gray-200 dark:border-gray-700"
                   } pl-3 mt-2 space-y-1`}

@@ -15,8 +15,8 @@ export default function Footer() {
       }`}
     >
       <div className="px-6 py-4">
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          {/* Left side - Company info */}
+        {/* <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+          
           <div className="flex items-center space-x-4">
             <span
               className={`text-sm ${
@@ -27,7 +27,7 @@ export default function Footer() {
             </span>
           </div>
 
-          {/* Center - Links */}
+          
           <div className="flex items-center space-x-6">
             <a
               href="/privacy"
@@ -48,11 +48,10 @@ export default function Footer() {
               Support
             </a>
           </div>
-        </div>
+        </div> */}
 
         {/* Bottom row - Additional info */}
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
+      <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
             <span
               className={`text-xs ${
                 isDark ? "text-gray-500" : "text-gray-500"
@@ -71,7 +70,6 @@ export default function Footer() {
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             </div>
           </div>
-        </div>
       </div>
     </footer>
   );
