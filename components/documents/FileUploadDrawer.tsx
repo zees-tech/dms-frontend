@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Folder, File } from '@/types/file-system';
+import { Folder } from '@/types/file-system';
 import {
     X,
-    Upload,
     Paperclip,
     FileText,
     Image,
@@ -45,7 +44,7 @@ export default function FileUploadDrawer({
         if (!files) return;
 
         const newFiles: UploadFile[] = Array.from(files).map((file) => ({
-            file: file as any, // Type assertion for demo
+            file: file,
             progress: 0,
             status: 'pending',
             id: Math.random().toString(36).substr(2, 9),
@@ -97,7 +96,7 @@ export default function FileUploadDrawer({
 
         // Call the upload handler
         const fileList = new DataTransfer();
-        pendingFiles.forEach(f => fileList.items.add(f.file as any));
+        pendingFiles.forEach(f => fileList.items.add(f.file));
         onUploadFiles(fileList.files, currentFolder.id);
     };
 
@@ -144,7 +143,7 @@ export default function FileUploadDrawer({
                                 Upload Files
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Upload to "{currentFolder.name}"
+                                Upload to {currentFolder.name}
                             </p>
                         </div>
                         <button

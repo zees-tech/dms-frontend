@@ -2,7 +2,6 @@ import axios from "axios";
 
 const httpClient = axios.create({
   baseURL: "/api",
-  // baseURL: "https://devwk.blueraiz.com/",
 });
 
 httpClient.interceptors.request.use((config) => {
