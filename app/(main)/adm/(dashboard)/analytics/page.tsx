@@ -1,4 +1,5 @@
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Eye, User, BarChart3, Clock } from 'lucide-react';
 
 export default function AnalyticsPage() {
     return (
@@ -25,7 +26,7 @@ export default function AnalyticsPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Page Views</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">45,678</p>
                             </div>
-                            <div className="text-3xl">👁️</div>
+                            <Eye className="w-8 h-8 text-blue-500" />
                         </div>
                         <div className="mt-4">
                             <div className="flex items-center">
@@ -41,7 +42,7 @@ export default function AnalyticsPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Unique Visitors</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">12,345</p>
                             </div>
-                            <div className="text-3xl">👤</div>
+                            <User className="w-8 h-8 text-green-500" />
                         </div>
                         <div className="mt-4">
                             <div className="flex items-center">
@@ -57,7 +58,7 @@ export default function AnalyticsPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Bounce Rate</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">34.5%</p>
                             </div>
-                            <div className="text-3xl">📊</div>
+                            <BarChart3 className="w-8 h-8 text-orange-500" />
                         </div>
                         <div className="mt-4">
                             <div className="flex items-center">
@@ -73,7 +74,7 @@ export default function AnalyticsPage() {
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Session</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">2m 34s</p>
                             </div>
-                            <div className="text-3xl">⏱️</div>
+                            <Clock className="w-8 h-8 text-purple-500" />
                         </div>
                         <div className="mt-4">
                             <div className="flex items-center">
