@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, AuthState, authService } from '@/lib/auth';
+import { AuthState, authService } from '@/lib/auth';
 
 interface AuthContextType extends AuthState {
     login: (email: string, password: string) => Promise<void>;

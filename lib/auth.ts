@@ -1,10 +1,5 @@
-// Authentication utilities
-export interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: 'admin' | 'user' | 'systemAdmin';
-}
+import { login } from "@/apiComponent/rest/login";
+import { User } from "@/types/auth";
 
 export interface AuthState {
     user: User | null;
@@ -15,20 +10,22 @@ export interface AuthState {
 // Auth service that connects to your API
 export const authService = {
     async login(email: string, password: string): Promise<User> {
-        const response = await fetch('/api/auth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password, action: 'login' }),
-        });
+        // const response = await fetch('/api/auth', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify({ email, password, action: 'login' }),
+        // });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Login failed');
+        const response = await login(email, password);
+
+        if (!response) {
+            const error = await response;
+            throw new Error(error || 'Login failed');
         }
 
-        const data = await response.json();
+        const data = await response;
 
         // Store token in localStorage (in production, use httpOnly cookies)
         localStorage.setItem('auth-token', data.token);

@@ -32,13 +32,13 @@ export default function Sidebar() {
 
     const colors = colorSchemes[colorScheme];
 
-    const userRole = user?.role || 'guest';
+    const userRole = user?.role||'guest';
 
     const rolePrefix = getRolePrefix(userRole);
 
     // Filter menu items based on user role
     const roleBasedMenuItems = menuItems.filter((item) => {
-        if (userRole === 'systemAdmin') {
+        if (userRole === 'sysadmin') {
             // System admin can access everything
             return item.name === 'System Settings';
         }

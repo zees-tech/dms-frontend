@@ -5,7 +5,7 @@ const httpClient = axios.create({
 });
 
 httpClient.interceptors.request.use((config) => {
-  const token = ''
+  const token = localStorage.getItem('auth-token');
   const refresh_token = ''
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -24,7 +24,7 @@ const graphqlClient = axios.create({
 
 // Attach Authorization token if available
 graphqlClient.interceptors.request.use((config) => {
-  const token = ''
+  const token = localStorage.getItem('auth-token');
   const refresh_token = ''
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;

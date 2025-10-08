@@ -61,7 +61,7 @@ export default function CreateFolderModal({
                                 Create New Folder
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Create a new folder in "{currentFolder.name}"
+                                Create a new folder in {currentFolder.name}
                             </p>
                         </div>
                         <button
