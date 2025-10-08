@@ -1,4 +1,4 @@
-import { toast } from 'react-toastify';
+import { toast, ToastOptions } from 'react-toastify';
 
 export const showToast = {
     success: (message: string) => {
@@ -18,7 +18,7 @@ export const showToast = {
     },
 
     // Custom toast with options
-    custom: (message: string, type: 'success' | 'error' | 'info' | 'warning', options?: any) => {
+    custom: (message: string, type: 'success' | 'error' | 'info' | 'warning', options?: ToastOptions) => {
         toast[type](message, options);
     }
 };
