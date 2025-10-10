@@ -32,7 +32,7 @@ export default function Sidebar() {
 
     const colors = colorSchemes[colorScheme];
 
-    const userRole = user?.role||'guest';
+    const userRole = user?.role || 'guest';
 
     const rolePrefix = getRolePrefix(userRole);
 
@@ -60,22 +60,22 @@ export default function Sidebar() {
     }));
 
     return (
-        <aside className={`${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} transition-all duration-300 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
             } border-r flex flex-col`}>
             {/* Sidebar Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className={`${isCollapsed ? 'p-2' : 'p-4'} border-b border-gray-200 dark:border-gray-700`}>
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className={`w-full flex items-center justify-between ${isDark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'
+                    className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} ${isDark ? 'text-white hover:bg-gray-800' : 'text-gray-900 hover:bg-gray-100'
                         } p-2 rounded-lg`}
                 >
                     {!isCollapsed && <span className="font-semibold">Menu</span>}
-                    <Menu className="w-5 h-5" />
+                    <Menu className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5'}`} />
                 </button>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4">
+            <nav className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'}`}>
                 <ul className="space-y-2">
                     {menuItemsWithRolePrefix.map((item) => {
                         const isActive = pathname === item.href;
@@ -84,14 +84,14 @@ export default function Sidebar() {
                             <li key={item.name}>
                                 <Link
                                     href={item.href}
-                                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive
+                                    className={`flex items-center ${isCollapsed ? 'justify-center p-2' : 'space-x-3 px-3 py-2'} rounded-lg transition-colors ${isActive
                                         ? `${colors.primary} text-white`
                                         : isDark
                                             ? 'text-gray-300 hover:bg-gray-800'
                                             : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                 >
-                                    <item.icon className="w-5 h-5" />
+                                    <item.icon className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5'}`} />
                                     {!isCollapsed && (
                                         <span className="font-medium">{item.name}</span>
                                     )}
@@ -103,10 +103,10 @@ export default function Sidebar() {
             </nav>
 
             {/* Sidebar Footer */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                <div className={`flex items-center space-x-3 ${isDark ? 'text-gray-400' : 'text-gray-600'
+            <div className={`${isCollapsed ? 'p-2' : 'p-4'} border-t border-gray-200 dark:border-gray-700`}>
+                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} ${isDark ? 'text-gray-400' : 'text-gray-600'
                     }`}>
-                    <HelpCircle className="w-5 h-5" />
+                    <HelpCircle className={`${isCollapsed ? 'w-8 h-8' : 'w-5 h-5'}`} />
                     {!isCollapsed && (
                         <div>
                             <p className="text-sm font-medium">Need help?</p>
