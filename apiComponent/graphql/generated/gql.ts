@@ -1,0 +1,64 @@
+/* eslint-disable */
+import * as types from './graphql';
+import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
+
+/**
+ * Map of all GraphQL operations in the project.
+ *
+ * This map has several performance disadvantages:
+ * 1. It is not tree-shakeable, so it will include all operations in the project.
+ * 2. It is not minifiable, so the string of a GraphQL query will be multiple times inside the bundle.
+ * 3. It does not support dead code elimination, so it will add unused operations.
+ *
+ * Therefore it is highly recommended to use the babel or swc plugin for production.
+ * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
+ */
+type Documents = {
+    "mutation CreateFile($input: CreateFileInput!) {\n  createFile(input: $input) {\n    id\n    name\n    pathName\n    description\n    size\n    mimeType\n    parentId\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nmutation UpdateFile($input: UpdateFileInput!) {\n  updateFile(input: $input) {\n    id\n    name\n    pathName\n    description\n    size\n    mimeType\n    parentId\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nmutation DeleteFile($id: UUID!) {\n  deleteFile(id: $id)\n}\n\nmutation RestoreFile($id: UUID!) {\n  restoreFile(id: $id)\n}\n\nmutation CreateFileVersion($input: CreateFileVersionInput!) {\n  createFileVersion(input: $input) {\n    id\n    versionNumber\n    description\n    size\n    createdAt\n  }\n}": typeof types.CreateFileDocument,
+    "mutation CreateFolder($input: CreateFolderInput!) {\n  createFolder(input: $input) {\n    id\n    name\n    description\n    parentId\n    createdAt\n  }\n}\n\nmutation UpdateFolder($input: UpdateFolderInput!) {\n  updateFolder(input: $input) {\n    id\n    name\n    description\n    parentId\n    createdAt\n  }\n}\n\nmutation DeleteFolder($id: UUID!) {\n  deleteFolder(id: $id)\n}\n\nmutation RestoreFolder($id: UUID!) {\n  restoreFolder(id: $id)\n}": typeof types.CreateFolderDocument,
+    "query GetFiles {\n  files {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFileById($id: UUID!) {\n  fileById(id: $id) {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFilesByFolderId($folderId: UUID!) {\n  filesByFolderId(folderId: $folderId) {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFileVersionHistory($fileId: UUID!) {\n  fileVersionHistory(fileId: $fileId) {\n    id\n    versionNumber\n    description\n    size\n    createdById\n    createdAt\n  }\n}": typeof types.GetFilesDocument,
+    "query GetFolders($parentId: UUID) {\n  folders(parentId: $parentId) {\n    id\n    name\n    description\n    parentId\n    createdById\n    createdAt\n    updatedAt\n  }\n}\n\nquery GetFolderById($id: UUID!) {\n  folderById(id: $id) {\n    id\n    name\n    description\n    parentId\n    createdById\n    createdAt\n    updatedAt\n  }\n}": typeof types.GetFoldersDocument,
+};
+const documents: Documents = {
+    "mutation CreateFile($input: CreateFileInput!) {\n  createFile(input: $input) {\n    id\n    name\n    pathName\n    description\n    size\n    mimeType\n    parentId\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nmutation UpdateFile($input: UpdateFileInput!) {\n  updateFile(input: $input) {\n    id\n    name\n    pathName\n    description\n    size\n    mimeType\n    parentId\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nmutation DeleteFile($id: UUID!) {\n  deleteFile(id: $id)\n}\n\nmutation RestoreFile($id: UUID!) {\n  restoreFile(id: $id)\n}\n\nmutation CreateFileVersion($input: CreateFileVersionInput!) {\n  createFileVersion(input: $input) {\n    id\n    versionNumber\n    description\n    size\n    createdAt\n  }\n}": types.CreateFileDocument,
+    "mutation CreateFolder($input: CreateFolderInput!) {\n  createFolder(input: $input) {\n    id\n    name\n    description\n    parentId\n    createdAt\n  }\n}\n\nmutation UpdateFolder($input: UpdateFolderInput!) {\n  updateFolder(input: $input) {\n    id\n    name\n    description\n    parentId\n    createdAt\n  }\n}\n\nmutation DeleteFolder($id: UUID!) {\n  deleteFolder(id: $id)\n}\n\nmutation RestoreFolder($id: UUID!) {\n  restoreFolder(id: $id)\n}": types.CreateFolderDocument,
+    "query GetFiles {\n  files {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFileById($id: UUID!) {\n  fileById(id: $id) {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFilesByFolderId($folderId: UUID!) {\n  filesByFolderId(folderId: $folderId) {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFileVersionHistory($fileId: UUID!) {\n  fileVersionHistory(fileId: $fileId) {\n    id\n    versionNumber\n    description\n    size\n    createdById\n    createdAt\n  }\n}": types.GetFilesDocument,
+    "query GetFolders($parentId: UUID) {\n  folders(parentId: $parentId) {\n    id\n    name\n    description\n    parentId\n    createdById\n    createdAt\n    updatedAt\n  }\n}\n\nquery GetFolderById($id: UUID!) {\n  folderById(id: $id) {\n    id\n    name\n    description\n    parentId\n    createdById\n    createdAt\n    updatedAt\n  }\n}": types.GetFoldersDocument,
+};
+
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ *
+ *
+ * @example
+ * ```ts
+ * const query = graphql(`query GetUser($id: ID!) { user(id: $id) { name } }`);
+ * ```
+ *
+ * The query argument is unknown!
+ * Please regenerate the types.
+ */
+export function graphql(source: string): unknown;
+
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "mutation CreateFile($input: CreateFileInput!) {\n  createFile(input: $input) {\n    id\n    name\n    pathName\n    description\n    size\n    mimeType\n    parentId\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nmutation UpdateFile($input: UpdateFileInput!) {\n  updateFile(input: $input) {\n    id\n    name\n    pathName\n    description\n    size\n    mimeType\n    parentId\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nmutation DeleteFile($id: UUID!) {\n  deleteFile(id: $id)\n}\n\nmutation RestoreFile($id: UUID!) {\n  restoreFile(id: $id)\n}\n\nmutation CreateFileVersion($input: CreateFileVersionInput!) {\n  createFileVersion(input: $input) {\n    id\n    versionNumber\n    description\n    size\n    createdAt\n  }\n}"): (typeof documents)["mutation CreateFile($input: CreateFileInput!) {\n  createFile(input: $input) {\n    id\n    name\n    pathName\n    description\n    size\n    mimeType\n    parentId\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nmutation UpdateFile($input: UpdateFileInput!) {\n  updateFile(input: $input) {\n    id\n    name\n    pathName\n    description\n    size\n    mimeType\n    parentId\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nmutation DeleteFile($id: UUID!) {\n  deleteFile(id: $id)\n}\n\nmutation RestoreFile($id: UUID!) {\n  restoreFile(id: $id)\n}\n\nmutation CreateFileVersion($input: CreateFileVersionInput!) {\n  createFileVersion(input: $input) {\n    id\n    versionNumber\n    description\n    size\n    createdAt\n  }\n}"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "mutation CreateFolder($input: CreateFolderInput!) {\n  createFolder(input: $input) {\n    id\n    name\n    description\n    parentId\n    createdAt\n  }\n}\n\nmutation UpdateFolder($input: UpdateFolderInput!) {\n  updateFolder(input: $input) {\n    id\n    name\n    description\n    parentId\n    createdAt\n  }\n}\n\nmutation DeleteFolder($id: UUID!) {\n  deleteFolder(id: $id)\n}\n\nmutation RestoreFolder($id: UUID!) {\n  restoreFolder(id: $id)\n}"): (typeof documents)["mutation CreateFolder($input: CreateFolderInput!) {\n  createFolder(input: $input) {\n    id\n    name\n    description\n    parentId\n    createdAt\n  }\n}\n\nmutation UpdateFolder($input: UpdateFolderInput!) {\n  updateFolder(input: $input) {\n    id\n    name\n    description\n    parentId\n    createdAt\n  }\n}\n\nmutation DeleteFolder($id: UUID!) {\n  deleteFolder(id: $id)\n}\n\nmutation RestoreFolder($id: UUID!) {\n  restoreFolder(id: $id)\n}"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query GetFiles {\n  files {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFileById($id: UUID!) {\n  fileById(id: $id) {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFilesByFolderId($folderId: UUID!) {\n  filesByFolderId(folderId: $folderId) {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFileVersionHistory($fileId: UUID!) {\n  fileVersionHistory(fileId: $fileId) {\n    id\n    versionNumber\n    description\n    size\n    createdById\n    createdAt\n  }\n}"): (typeof documents)["query GetFiles {\n  files {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFileById($id: UUID!) {\n  fileById(id: $id) {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFilesByFolderId($folderId: UUID!) {\n  filesByFolderId(folderId: $folderId) {\n    id\n    name\n    description\n    size\n    mimeType\n    parentId\n    createdById\n    createdAt\n    updatedAt\n    expiry\n    currentVersion\n  }\n}\n\nquery GetFileVersionHistory($fileId: UUID!) {\n  fileVersionHistory(fileId: $fileId) {\n    id\n    versionNumber\n    description\n    size\n    createdById\n    createdAt\n  }\n}"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query GetFolders($parentId: UUID) {\n  folders(parentId: $parentId) {\n    id\n    name\n    description\n    parentId\n    createdById\n    createdAt\n    updatedAt\n  }\n}\n\nquery GetFolderById($id: UUID!) {\n  folderById(id: $id) {\n    id\n    name\n    description\n    parentId\n    createdById\n    createdAt\n    updatedAt\n  }\n}"): (typeof documents)["query GetFolders($parentId: UUID) {\n  folders(parentId: $parentId) {\n    id\n    name\n    description\n    parentId\n    createdById\n    createdAt\n    updatedAt\n  }\n}\n\nquery GetFolderById($id: UUID!) {\n  folderById(id: $id) {\n    id\n    name\n    description\n    parentId\n    createdById\n    createdAt\n    updatedAt\n  }\n}"];
+
+export function graphql(source: string) {
+  return (documents as any)[source] ?? {};
+}
+
+export type DocumentType<TDocumentNode extends DocumentNode<any, any>> = TDocumentNode extends DocumentNode<  infer TType,  any>  ? TType  : never;

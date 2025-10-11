@@ -1,0 +1,62 @@
+# Get all files (with filtering, sorting, and projection)
+query GetFiles {
+  files {
+    id
+    name
+    description
+    size
+    mimeType
+    parentId
+    createdById
+    createdAt
+    updatedAt
+    expiry
+    currentVersion
+  }
+}
+
+# Get file by ID
+query GetFileById($id: UUID!) {
+  fileById(id: $id) {
+    id
+    name
+    description
+    size
+    mimeType
+    parentId
+    createdById
+    createdAt
+    updatedAt
+    expiry
+    currentVersion
+  }
+}
+
+# Get files by folder ID
+query GetFilesByFolderId($folderId: UUID!) {
+  filesByFolderId(folderId: $folderId) {
+    id
+    name
+    description
+    size
+    mimeType
+    parentId
+    createdById
+    createdAt
+    updatedAt
+    expiry
+    currentVersion
+  }
+}
+
+# Get file version history
+query GetFileVersionHistory($fileId: UUID!) {
+  fileVersionHistory(fileId: $fileId) {
+    id
+    versionNumber
+    description
+    size
+    createdById
+    createdAt
+  }
+}

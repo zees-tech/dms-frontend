@@ -7,9 +7,10 @@ interface FolderViewProps {
   folder: Folder;
   onFolderClick: (folder: Folder) => void;
   onFileClick?: (file: File) => void;
+  onFileDownload?: (fileId: string, fileName: string) => void;
 }
 
-export default function FolderView({ folder, onFolderClick, onFileClick }: FolderViewProps) {
+export default function FolderView({ folder, onFolderClick, onFileClick, onFileDownload }: FolderViewProps) {
   // Extract folders and files from the current folder's children
   const folders = folder.children?.filter(child => child.type === 'folder') as Folder[] || [];
   const files = folder.children?.filter(child => child.type === 'file') as File[] || [];
@@ -190,7 +191,9 @@ export default function FolderView({ folder, onFolderClick, onFileClick }: Folde
               title="Download"
               onClick={(e) => {
                 e.stopPropagation();
-                if (file.url) {
+                if (onFileDownload) {
+                  onFileDownload(file.id, `${file.name}.${file.extension}`);
+                } else if (file.url) {
                   const a = document.createElement('a');
                   a.href = file.url;
                   a.download = `${file.name}.${file.extension}`;

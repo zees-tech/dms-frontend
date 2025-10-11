@@ -1,0 +1,54 @@
+# Create a new file
+mutation CreateFile($input: CreateFileInput!) {
+  createFile(input: $input) {
+    id
+    name
+    pathName
+    description
+    size
+    mimeType
+    parentId
+    createdAt
+    updatedAt
+    expiry
+    currentVersion
+  }
+}
+
+# Update an existing file
+mutation UpdateFile($input: UpdateFileInput!) {
+  updateFile(input: $input) {
+    id
+    name
+    pathName
+    description
+    size
+    mimeType
+    parentId
+    createdAt
+    updatedAt
+    expiry
+    currentVersion
+  }
+}
+
+# Delete a file (soft delete)
+mutation DeleteFile($id: UUID!) {
+  deleteFile(id: $id)
+}
+
+# Restore a deleted file
+mutation RestoreFile($id: UUID!) {
+  restoreFile(id: $id)
+}
+
+# Create a new file version
+mutation CreateFileVersion($input: CreateFileVersionInput!) {
+  createFileVersion(input: $input) {
+    id
+    versionNumber
+    description
+    size
+    createdAt
+  }
+}

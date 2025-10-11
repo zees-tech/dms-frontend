@@ -3,6 +3,12 @@
 import { useState, useRef } from 'react';
 import { Folder } from '@/types/file-system';
 import {
+    uploadFiles,
+    generatePresignedUrl,
+    uploadFileWithPresignedUrl,
+    completeUpload
+} from '@/apiComponent/rest/fileUpload';
+import {
     X,
     Paperclip,
     FileText,
@@ -15,6 +21,7 @@ import {
     Clock,
     FolderOpen
 } from 'lucide-react';
+import { createFile } from '@/apiComponent/graphql/file';
 
 interface FileUploadDrawerProps {
     isOpen: boolean;
@@ -36,7 +43,7 @@ export default function FileUploadDrawer({
     onUploadFiles,
     currentFolder,
 }: FileUploadDrawerProps) {
-    const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
+    const [uploadFilesState, setUploadFilesState] = useState<UploadFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,7 +57,7 @@ export default function FileUploadDrawer({
             id: Math.random().toString(36).substr(2, 9),
         }));
 
-        setUploadFiles(prev => [...prev, ...newFiles]);
+        setUploadFilesState(prev => [...prev, ...newFiles]);
     };
 
     const handleDrop = (e: React.DragEvent) => {
@@ -70,38 +77,109 @@ export default function FileUploadDrawer({
     };
 
     const removeFile = (id: string) => {
-        setUploadFiles(prev => prev.filter(f => f.id !== id));
+        setUploadFilesState(prev => prev.filter(f => f.id !== id));
     };
 
     const startUpload = async () => {
-        const pendingFiles = uploadFiles.filter(f => f.status === 'pending');
+        const pendingFiles = uploadFilesState.filter(f => f.status === 'pending');
 
-        for (const uploadFile of pendingFiles) {
-            setUploadFiles(prev =>
-                prev.map(f => f.id === uploadFile.id ? { ...f, status: 'uploading' } : f)
+        if (pendingFiles.length === 0) return;
+
+        try {
+            // Update all pending files to uploading status
+            setUploadFilesState(prev =>
+                prev.map(f =>
+                    f.status === 'pending' ? { ...f, status: 'uploading', progress: 0 } : f
+                )
             );
 
-            // Simulate upload progress
-            for (let progress = 0; progress <= 100; progress += 10) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                setUploadFiles(prev =>
-                    prev.map(f => f.id === uploadFile.id ? { ...f, progress } : f)
-                );
+            // Upload files using pre-signed URLs for better performance and no size limits
+            const uploadPromises = pendingFiles.map(async (uploadFile) => {
+                try {
+                    // Generate pre-signed URL for direct upload
+                    const presignedUrlResponse = await generatePresignedUrl(
+                        uploadFile.file.name,
+                        currentFolder.id,
+                        uploadFile.file.size,
+                        uploadFile.file.type || 'application/octet-stream'
+                    );
+
+                    // Upload file directly to storage using pre-signed URL
+                    await uploadFileWithPresignedUrl(
+                        uploadFile.file,
+                        presignedUrlResponse.uploadUrl,
+                        (progress) => {
+                            // Update progress for this specific file
+                            setUploadFilesState(prev =>
+                                prev.map(f =>
+                                    f.id === uploadFile.id ? { ...f, progress } : f
+                                )
+                            );
+                        }
+                    );
+
+                    const token = localStorage.getItem("auth-token");
+                    const refresh_token = "";
+
+                    // Complete the upload by storing file metadata
+                    const completeResponse = await completeUpload(
+                        presignedUrlResponse.fileKey,
+                        uploadFile.file.name,
+                        uploadFile.file.size,
+                        uploadFile.file.type || 'application/octet-stream',
+                        currentFolder.id,
+                        token || "",
+                        refresh_token || ""
+                    );
+
+                    // Mark file as completed
+                    setUploadFilesState(prev =>
+                        prev.map(f =>
+                            f.id === uploadFile.id ? { ...f, status: 'completed', progress: 100 } : f
+                        )
+                    );
+
+                    return { success: true, file: uploadFile.file, metadata: completeResponse.fileMetadata };
+                } catch (error) {
+                    console.error(`Upload failed for ${uploadFile.file.name}:`, error);
+
+                    // Mark file as failed with error message
+                    setUploadFilesState(prev =>
+                        prev.map(f =>
+                            f.id === uploadFile.id ? { ...f, status: 'error', progress: 0 } : f
+                        )
+                    );
+
+                    return { success: false, file: uploadFile.file, error: error instanceof Error ? error.message : 'Upload failed' };
+                }
+            });
+
+            // Wait for all uploads to complete
+            const results = await Promise.all(uploadPromises);
+
+            // Call the parent upload handler with the successful files
+            const successfulFiles = results.filter(result => result.success);
+
+            if (successfulFiles.length > 0) {
+                const fileList = new DataTransfer();
+                successfulFiles.forEach(result => fileList.items.add(result.file));
+                onUploadFiles(fileList.files, currentFolder.id);
             }
 
-            setUploadFiles(prev =>
-                prev.map(f => f.id === uploadFile.id ? { ...f, status: 'completed' } : f)
+        } catch (error) {
+            console.error('Upload process failed:', error);
+
+            // Mark all uploading files as failed
+            setUploadFilesState(prev =>
+                prev.map(f =>
+                    f.status === 'uploading' ? { ...f, status: 'error', progress: 0 } : f
+                )
             );
         }
-
-        // Call the upload handler
-        const fileList = new DataTransfer();
-        pendingFiles.forEach(f => fileList.items.add(f.file));
-        onUploadFiles(fileList.files, currentFolder.id);
     };
 
     const clearCompleted = () => {
-        setUploadFiles(prev => prev.filter(f => f.status !== 'completed'));
+        setUploadFilesState(prev => prev.filter(f => f.status !== 'completed'));
     };
 
     const getFileIcon = (file: File) => {
@@ -171,7 +249,7 @@ export default function FileUploadDrawer({
                             Drop files here or click to browse
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                            Support for multiple files. Max 10MB per file.
+                            Support for multiple files. Large files supported via direct upload.
                         </p>
                         <button
                             onClick={() => fileInputRef.current?.click()}
@@ -190,11 +268,11 @@ export default function FileUploadDrawer({
                     </div>
 
                     {/* File List */}
-                    {uploadFiles.length > 0 && (
+                    {uploadFilesState.length > 0 && (
                         <div className="mt-6 space-y-3">
                             <div className="flex items-center justify-between">
                                 <h4 className="font-medium text-gray-900 dark:text-white">
-                                    Files ({uploadFiles.length})
+                                    Files ({uploadFilesState.length})
                                 </h4>
                                 <div className="flex gap-2">
                                     <button
@@ -207,7 +285,7 @@ export default function FileUploadDrawer({
                             </div>
 
                             <div className="space-y-2 max-h-64 overflow-y-auto">
-                                {uploadFiles.map((uploadFile) => (
+                                {uploadFilesState.map((uploadFile) => (
                                     <div
                                         key={uploadFile.id}
                                         className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
@@ -271,7 +349,7 @@ export default function FileUploadDrawer({
                 </div>
 
                 {/* Footer */}
-                {uploadFiles.length > 0 && (
+                {uploadFilesState.length > 0 && (
                     <div className="p-6 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center gap-3">
                             <button
@@ -282,10 +360,10 @@ export default function FileUploadDrawer({
                             </button>
                             <button
                                 onClick={startUpload}
-                                disabled={uploadFiles.filter(f => f.status === 'pending').length === 0}
+                                disabled={uploadFilesState.filter(f => f.status === 'pending').length === 0}
                                 className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                Upload {uploadFiles.filter(f => f.status === 'pending').length} Files
+                                Upload {uploadFilesState.filter(f => f.status === 'pending').length} Files
                             </button>
                         </div>
                     </div>
