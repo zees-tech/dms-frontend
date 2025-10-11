@@ -1,0 +1,31 @@
+# Create a new folder
+mutation CreateFolder($input: CreateFolderInput!) {
+  createFolder(input: $input) {
+    id
+    name
+    description
+    parentId
+    createdAt
+  }
+}
+
+# Update an existing folder
+mutation UpdateFolder($input: UpdateFolderInput!) {
+  updateFolder(input: $input) {
+    id
+    name
+    description
+    parentId
+    createdAt
+  }
+}
+
+# Delete a folder (soft delete with recursive deletion)
+mutation DeleteFolder($id: UUID!) {
+  deleteFolder(id: $id)
+}
+
+# Restore a deleted folder (with recursive restoration)
+mutation RestoreFolder($id: UUID!) {
+  restoreFolder(id: $id)
+}

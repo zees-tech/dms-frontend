@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Upload } from 'lucide-react';
 import FolderTree from "@/components/documents/FolderTree";
@@ -11,13 +11,28 @@ import CreateFolderModal from "@/components/documents/CreateFolderModal";
 import FileUploadDrawer from "@/components/documents/FileUploadDrawer";
 import SearchAndFilter from "@/components/documents/SearchAndFilter";
 import ToastContainer from "@/components/ui/ToastContainer";
-import { mockFileSystem, Folder, File } from "@/types/file-system";
+import { Folder, File } from "@/types/file-system";
 import { useToast } from "@/hooks/useToast";
+import { getFolders, createFolder } from "@/apiComponent/graphql/folder";
+import { getFiles } from "@/apiComponent/graphql/file";
+import { downloadFile, smartDownloadFile } from "@/apiComponent/rest/fileDownload";
+
+// Create a root folder structure
+const createRootFolder = (): Folder => ({
+  id: 'root',
+  name: 'Documents',
+  type: 'folder',
+  path: '/',
+  parentId: null,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  children: [],
+});
 
 export default function DocumentsPage() {
-  const [fileSystem, setFileSystem] = useState<Folder>(mockFileSystem);
-  const [currentFolder, setCurrentFolder] = useState<Folder>(mockFileSystem);
-  const [breadcrumb, setBreadcrumb] = useState<Folder[]>([mockFileSystem]);
+  const [fileSystem, setFileSystem] = useState<Folder>(createRootFolder());
+  const [currentFolder, setCurrentFolder] = useState<Folder>(createRootFolder());
+  const [breadcrumb, setBreadcrumb] = useState<Folder[]>([createRootFolder()]);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isUploadDrawerOpen, setIsUploadDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,7 +41,111 @@ export default function DocumentsPage() {
     dateRange: '',
     size: '',
   });
+  const [loading, setLoading] = useState(true);
   const { pushToast } = useToast();
+
+  // Fetch folders and files data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch folders
+        const foldersResult = await getFolders();
+        if (foldersResult.error) {
+          throw new Error(foldersResult.error.message);
+        }
+
+        // Fetch files
+        const filesResult = await getFiles();
+        if (filesResult.error) {
+          throw new Error(filesResult.error.message);
+        }
+
+        // Transform API data to match our file system structure
+        const apiFolders = foldersResult.data?.folders || [];
+        const apiFiles = filesResult.data?.files || [];
+
+        // Build the folder tree structure
+        const buildFolderTree = (folders: typeof apiFolders): Folder => {
+          const rootFolder = createRootFolder();
+          
+          // Add folders to the root
+          const folderMap = new Map<string, Folder>();
+          folderMap.set('root', rootFolder);
+
+          // First pass: create all folders
+          apiFolders.forEach(folder => {
+            const folderNode: Folder = {
+              id: folder.id,
+              name: folder.name,
+              type: 'folder',
+              path: `/${folder.name}`,
+              parentId: folder.parentId || 'root',
+              createdAt: folder.createdAt,
+              updatedAt: folder.updatedAt,
+              children: [],
+            };
+            folderMap.set(folder.id, folderNode);
+          });
+
+          // Second pass: build hierarchy
+          apiFolders.forEach(folder => {
+            const parentId = folder.parentId || 'root';
+            const parent = folderMap.get(parentId);
+            const current = folderMap.get(folder.id);
+            
+            if (parent && current) {
+              if (!parent.children) parent.children = [];
+              parent.children.push(current);
+            }
+          });
+
+          // Add files to their respective folders
+          apiFiles.forEach(file => {
+            const parentId = file.parentId || 'root';
+            const parent = folderMap.get(parentId);
+            
+            if (parent) {
+              const fileNode: File = {
+                id: file.id,
+                name: file.name,
+                type: 'file',
+                size: file.size || 0,
+                mimeType: file.mimeType || 'application/octet-stream',
+                extension: file.name.split('.').pop() || '',
+                folderId: parentId,
+                createdAt: file.createdAt,
+                updatedAt: file.updatedAt,
+                url: '', // Will be generated when needed
+              };
+              
+              if (!parent.children) parent.children = [];
+              parent.children.push(fileNode);
+            }
+          });
+
+          return rootFolder;
+        };
+
+        const newFileSystem = buildFolderTree(apiFolders);
+        setFileSystem(newFileSystem);
+        setCurrentFolder(newFileSystem);
+        setBreadcrumb([newFileSystem]);
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        pushToast({
+          message: 'Failed to load documents',
+          type: 'error',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [pushToast]);
 
   const handleFolderClick = (folder: Folder) => {
     setCurrentFolder(folder);
@@ -201,32 +320,59 @@ export default function DocumentsPage() {
   const closeUploadDrawer = () => setIsUploadDrawerOpen(false);
 
   const handleCreateFolder = async (name: string, parentId: string) => {
-    const newFolder: Folder = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      type: 'folder',
-      path: currentFolder.path === '/' ? `/${name}` : `${currentFolder.path}/${name}`,
-      parentId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      children: [],
-    };
+    try {
+      // Call the createFolder API
+      const result = await createFolder({
+        name,
+        parentId: parentId === 'root' ? null : parentId,
+        description: '',
+      });
 
-    const updatedFileSystem = upsertChild(fileSystem, parentId, newFolder);
-    setFileSystem(updatedFileSystem);
-
-    // Update current folder if it's the parent
-    if (currentFolder.id === parentId) {
-      const updatedCurrentFolder = findFolderById(updatedFileSystem, parentId);
-      if (updatedCurrentFolder) {
-        setCurrentFolder(updatedCurrentFolder);
+      if (result.error) {
+        throw new Error(result.error.message);
       }
-    }
 
-    pushToast({
-      message: `Folder "${name}" created successfully`,
-      type: 'success',
-    });
+      if (!result.data?.createFolder) {
+        throw new Error('Failed to create folder');
+      }
+
+      const createdFolder = result.data.createFolder;
+
+      // Create the folder object for our local state
+      const newFolder: Folder = {
+        id: createdFolder.id,
+        name: createdFolder.name,
+        type: 'folder',
+        path: currentFolder.path === '/' ? `/${createdFolder.name}` : `${currentFolder.path}/${createdFolder.name}`,
+        parentId: createdFolder.parentId || 'root',
+        createdAt: createdFolder.createdAt,
+        updatedAt: createdFolder.createdAt, // Use createdAt since updatedAt is not returned
+        children: [],
+      };
+
+      // Update local state
+      const updatedFileSystem = upsertChild(fileSystem, parentId, newFolder);
+      setFileSystem(updatedFileSystem);
+
+      // Update current folder if it's the parent
+      if (currentFolder.id === parentId) {
+        const updatedCurrentFolder = findFolderById(updatedFileSystem, parentId);
+        if (updatedCurrentFolder) {
+          setCurrentFolder(updatedCurrentFolder);
+        }
+      }
+
+      pushToast({
+        message: `Folder "${name}" created successfully`,
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      pushToast({
+        message: `Failed to create folder "${name}"`,
+        type: 'error',
+      });
+    }
   };
 
   const handleUploadFiles = async (files: FileList, folderId: string) => {
@@ -278,6 +424,47 @@ export default function DocumentsPage() {
       dateRange: newFilters.dateRange || '',
       size: newFilters.size || '',
     });
+  };
+
+  const handleDownloadFile = async (fileId: string, fileName: string) => {
+    try {
+      // Show initial download toast
+      pushToast({
+        message: `Starting download: ${fileName}`,
+        type: 'info',
+      });
+
+      await smartDownloadFile(fileId, fileName, {
+        onProgress: (progress) => {
+          // Log progress to console for debugging
+          console.log(`Download progress: ${progress.percentage}% (${formatBytes(progress.loaded)}/${formatBytes(progress.total)})`);
+        }
+      });
+
+      pushToast({
+        message: `File "${fileName}" downloaded successfully`,
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      pushToast({
+        message: `Failed to download file "${fileName}"`,
+        type: 'error',
+      });
+    }
+  };
+
+  // Helper function to format bytes
+  const formatBytes = (bytes: number, decimals = 2): string => {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
 
   // Filter files and folders based on search and filters
@@ -482,6 +669,7 @@ export default function DocumentsPage() {
                 <FolderView
                   folder={currentFolder}
                   onFolderClick={handleFolderClick}
+                  onFileDownload={handleDownloadFile}
                 />
               </div>
             </div>

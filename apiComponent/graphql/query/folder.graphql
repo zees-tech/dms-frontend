@@ -1,0 +1,25 @@
+# Get folders (with optional parentId, filtering, sorting, and projection)
+query GetFolders($parentId: UUID) {
+  folders(parentId: $parentId) {
+    id
+    name
+    description
+    parentId
+    createdById
+    createdAt
+    updatedAt
+  }
+}
+
+# Get folder by ID
+query GetFolderById($id: UUID!) {
+  folderById(id: $id) {
+    id
+    name
+    description
+    parentId
+    createdById
+    createdAt
+    updatedAt
+  }
+}
