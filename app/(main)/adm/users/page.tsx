@@ -1,17 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Modal, Form, Button, Row, Col, message } from "antd";
-import { getPermissionsAssigneeList } from "@/apiComponent/graphql/permission";
-import { AssigneeInfo as GraphQLAssigneeInfo, AssignmentType } from "@/apiComponent/graphql/generated/graphql";
+import { useState } from "react";
+import { Modal, Form, Input, Select, Button, Row, Col, message, Collapse, Tag } from "antd";
+import { Edit, Trash2 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import UsersTable from "./ui/UsersTable";
-import AccessControlTab from "./ui/AccessControlTab";
-import DepartmentsTable from "./ui/DepartmentsTable";
-import UserForm from "./ui/UserForm";
-import RoleForm from "./ui/RoleForm";
-import UserGroupForm from "./ui/UserGroupForm";
-import DepartmentForm from "./ui/DepartmentForm";
 
 // Type definitions
 interface User {
@@ -26,6 +18,30 @@ interface User {
 interface Department {
   id: number;
   name: string;
+}
+
+interface UsersTableProps {
+  users: User[];
+  onEdit: (user: User) => void;
+  onDelete: (id: number) => void;
+}
+
+interface DepartmentsTableProps {
+  departments: Department[];
+  onEdit: (department: Department) => void;
+  onDelete: (id: number) => void;
+}
+
+interface AccessControlTabProps {
+  roles: Role[];
+  userGroups: UserGroup[];
+  users: User[];
+  onEditRole: (role: Role) => void;
+  onDeleteRole: (id: number) => void;
+  onEditUserGroup: (userGroup: UserGroup) => void;
+  onDeleteUserGroup: (id: number) => void;
+  onAddRole: () => void;
+  onAddUserGroup: () => void;
 }
 
 export default function UsersPage() {
@@ -292,6 +308,14 @@ export default function UsersPage() {
             onDeleteRole={handleDeleteRole}
             onEditUserGroup={openModal}
             onDeleteUserGroup={handleDeleteUserGroup}
+            onAddRole={() => {
+              form.setFieldsValue({ type: "role" });
+              openModal();
+            }}
+            onAddUserGroup={() => {
+              form.setFieldsValue({ type: "user-group" });
+              openModal();
+            }}
           />
         )}
         {activeTab === "departments" && (
@@ -332,5 +356,301 @@ export default function UsersPage() {
         </Modal>
       </div>
     </DashboardLayout>
+  );
+}
+
+function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          All Users ({users.length})
+        </h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Email
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Role
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Department
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
+                      {user.name
+                        .split(" ")
+                        .map((n: string) => n[0])
+                        .join("")}
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {user.name}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                  {user.email}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                  {user.department}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === "Active"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                      }`}
+                  >
+                    {user.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => onEdit(user)}
+                      className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit user"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(user.id)}
+                      className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                      title="Delete user"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, onEditUserGroup, onDeleteUserGroup, onAddRole, onAddUserGroup }: AccessControlTabProps) {
+  const roleItems = roles.map((role) => ({
+    key: role.id.toString(),
+    label: (
+      <div className="flex justify-between items-center w-full">
+        <span className="font-medium">{role.name}</span>
+        <div className="flex space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditRole(role);
+            }}
+            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+            title="Edit role"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteRole(role.id);
+            }}
+            className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+            title="Delete role"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    ),
+    children: (
+      <div className="space-y-3">
+        <div>
+          <span className="font-medium">Description:</span> {role.description}
+        </div>
+        <div>
+          <span className="font-medium">Permissions:</span>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {role.permissions.map((permission) => (
+              <Tag key={permission} color="blue">
+                {permission}
+              </Tag>
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+  }));
+
+  const userGroupItems = userGroups.map((group) => ({
+    key: group.id.toString(),
+    label: (
+      <div className="flex justify-between items-center w-full">
+        <span className="font-medium">{group.name}</span>
+        <div className="flex space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditUserGroup(group);
+            }}
+            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+            title="Edit user group"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteUserGroup(group.id);
+            }}
+            className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+            title="Delete user group"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    ),
+    children: (
+      <div className="space-y-3">
+        <div>
+          <span className="font-medium">Description:</span> {group.description}
+        </div>
+        <div>
+          <span className="font-medium">Members:</span>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {group.members.map((memberId) => {
+              const member = users.find(u => u.id === memberId);
+              return member ? (
+                <Tag key={memberId} color="green">
+                  {member.name}
+                </Tag>
+              ) : null;
+            })}
+          </div>
+        </div>
+        <div>
+          <span className="font-medium">Permissions:</span>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {group.permissions.map((permission) => (
+              <Tag key={permission} color="blue">
+                {permission}
+              </Tag>
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+  }));
+
+  return (
+    <div className="space-y-6">
+      {/* Roles Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Roles ({roles.length})
+          </h3>
+          <button
+            onClick={onAddRole}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+          >
+            Add Role
+          </button>
+        </div>
+        <Collapse ghost items={roleItems} />
+      </div>
+
+      {/* User Groups Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            User Groups ({userGroups.length})
+          </h3>
+          <button
+            onClick={onAddUserGroup}
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+          >
+            Add User Group
+          </button>
+        </div>
+        <Collapse ghost items={userGroupItems} />
+      </div>
+    </div>
+  );
+}
+
+function DepartmentsTable({ departments, onEdit, onDelete }: DepartmentsTableProps) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          All Departments ({departments.length})
+        </h3>
+      </div>
+      <table className="w-full">
+        <thead className="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Department Name
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+          {departments.map((dept) => (
+            <tr key={dept.id}>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                {dept.name}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => onEdit(dept)}
+                    className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                    title="Edit department"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onDelete(dept.id)}
+                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                    title="Delete department"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
