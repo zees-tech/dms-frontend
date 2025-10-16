@@ -30,7 +30,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (user) {
       const rolePrefix = getRolePrefix(user.role);
-      router.push(rolePrefix ? `/${rolePrefix}/dashboard` : "/dashboard");
+      router.push(rolePrefix ? `/${rolePrefix}/dashboard` : "/documents");
     }
   }, [user, router]);
 
