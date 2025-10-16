@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Form, Input, Select, Button, Row, Col, message, Collapse, Tag } from "antd";
 import { Edit, Trash2 } from "lucide-react";
+import { getPermissionsAssigneeList } from "@/apiComponent/graphql/permission";
+import { AssigneeInfo as GraphQLAssigneeInfo, AssignmentType } from "@/apiComponent/graphql/generated/graphql";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import UserForm from "./ui/UserForm";
+import UserGroupForm from "./ui/UserGroupForm";
+import RoleForm from "./ui/RoleForm";
+import DepartmentForm from "./ui/DepartmentForm";
 
 // Type definitions
 interface User {
@@ -20,6 +26,21 @@ interface Department {
   name: string;
 }
 
+interface Role {
+  id: number;
+  name: string;
+  description: string;
+  permissions: string[];
+}
+
+interface UserGroup {
+  id: number;
+  name: string;
+  description: string;
+  members: number[];
+  permissions: string[];
+}
+
 interface UsersTableProps {
   users: User[];
   onEdit: (user: User) => void;
@@ -33,12 +54,10 @@ interface DepartmentsTableProps {
 }
 
 interface AccessControlTabProps {
-  roles: Role[];
-  userGroups: UserGroup[];
-  users: User[];
-  onEditRole: (role: Role) => void;
+  assignees: GraphQLAssigneeInfo[];
+  onEditRole: (role: GraphQLAssigneeInfo) => void;
   onDeleteRole: (id: number) => void;
-  onEditUserGroup: (userGroup: UserGroup) => void;
+  onEditUserGroup: (userGroup: GraphQLAssigneeInfo) => void;
   onDeleteUserGroup: (id: number) => void;
   onAddRole: () => void;
   onAddUserGroup: () => void;
@@ -457,9 +476,12 @@ function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
   );
 }
 
-function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, onEditUserGroup, onDeleteUserGroup, onAddRole, onAddUserGroup }: AccessControlTabProps) {
+function AccessControlTab({ assignees, onEditRole, onDeleteRole, onEditUserGroup, onDeleteUserGroup, onAddRole, onAddUserGroup }: AccessControlTabProps) {
+  const roles = assignees.filter(assignee => assignee.type === AssignmentType.Role);
+  const userGroups = assignees.filter(assignee => assignee.type === AssignmentType.Group);
+
   const roleItems = roles.map((role) => ({
-    key: role.id.toString(),
+    key: role.id,
     label: (
       <div className="flex justify-between items-center w-full">
         <span className="font-medium">{role.name}</span>
@@ -477,7 +499,7 @@ function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, 
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDeleteRole(role.id);
+              onDeleteRole(parseInt(role.id));
             }}
             className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
             title="Delete role"
@@ -490,16 +512,12 @@ function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, 
     children: (
       <div className="space-y-3">
         <div>
-          <span className="font-medium">Description:</span> {role.description}
+          <span className="font-medium">Description:</span> {role.description || 'No description'}
         </div>
         <div>
           <span className="font-medium">Permissions:</span>
           <div className="flex flex-wrap gap-2 mt-2">
-            {role.permissions.map((permission) => (
-              <Tag key={permission} color="blue">
-                {permission}
-              </Tag>
-            ))}
+            <span className="text-gray-500">Permissions managed via API</span>
           </div>
         </div>
       </div>
@@ -507,7 +525,7 @@ function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, 
   }));
 
   const userGroupItems = userGroups.map((group) => ({
-    key: group.id.toString(),
+    key: group.id,
     label: (
       <div className="flex justify-between items-center w-full">
         <span className="font-medium">{group.name}</span>
@@ -525,7 +543,7 @@ function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, 
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDeleteUserGroup(group.id);
+              onDeleteUserGroup(parseInt(group.id));
             }}
             className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
             title="Delete user group"
@@ -538,29 +556,12 @@ function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, 
     children: (
       <div className="space-y-3">
         <div>
-          <span className="font-medium">Description:</span> {group.description}
-        </div>
-        <div>
-          <span className="font-medium">Members:</span>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {group.members.map((memberId) => {
-              const member = users.find(u => u.id === memberId);
-              return member ? (
-                <Tag key={memberId} color="green">
-                  {member.name}
-                </Tag>
-              ) : null;
-            })}
-          </div>
+          <span className="font-medium">Description:</span> {group.description || 'No description'}
         </div>
         <div>
           <span className="font-medium">Permissions:</span>
           <div className="flex flex-wrap gap-2 mt-2">
-            {group.permissions.map((permission) => (
-              <Tag key={permission} color="blue">
-                {permission}
-              </Tag>
-            ))}
+            <span className="text-gray-500">Permissions managed via API</span>
           </div>
         </div>
       </div>

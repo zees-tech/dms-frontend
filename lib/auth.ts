@@ -1,5 +1,5 @@
 import { login } from "@/apiComponent/rest/login";
-import { User } from "@/types/auth";
+import { User, LoginResponse } from "@/types/auth";
 
 export interface AuthState {
     user: User | null;
@@ -81,7 +81,7 @@ export const authService = {
     },
 
     // Get the complete stored API response
-    getStoredLoginResponse(): any | null {
+    getStoredLoginResponse(): LoginResponse | null {
         const storedResponse = localStorage.getItem('auth-response');
         if (!storedResponse) {
             return null;

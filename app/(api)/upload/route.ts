@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
             parentId: folderId,
             size: file.size,
             mimeType: file.type || "application/octet-stream",
+            pathName: file.name, // Use the original file name as pathName
           };
 
           const { data: createdFile, error } = await createFile(
