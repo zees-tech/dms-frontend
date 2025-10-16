@@ -1,22 +1,20 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Upload } from 'lucide-react';
 import FolderTree from "@/components/documents/FolderTree";
 import FolderView from "@/components/documents/FolderView";
 import FilePreview from "@/components/documents/FilePreview";
 import Breadcrumb from "@/components/documents/Breadcrumb";
-import DocumentActionsPanel from "@/components/documents/DocumentActionsPanel";
 import CreateFolderModal from "@/components/documents/CreateFolderModal";
 import FileUploadDrawer from "@/components/documents/FileUploadDrawer";
-import SearchAndFilter from "@/components/documents/SearchAndFilter";
 import ToastContainer from "@/components/ui/ToastContainer";
 import { Folder, File } from "@/types/file-system";
 import { useToast } from "@/hooks/useToast";
 import { getFolders, createFolder } from "@/apiComponent/graphql/folder";
 import { getFiles } from "@/apiComponent/graphql/file";
-import { downloadFile, smartDownloadFile, getPresignedDownloadUrl } from "@/apiComponent/rest/fileDownload";
+import { smartDownloadFile, getPresignedDownloadUrl } from "@/apiComponent/rest/fileDownload";
 
 // Create a root folder structure
 const createRootFolder = (): Folder => ({
@@ -38,13 +36,8 @@ export default function DocumentsPage() {
   const [isUploadDrawerOpen, setIsUploadDrawerOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({
-    fileType: '',
-    dateRange: '',
-    size: '',
-  });
-  const [loading, setLoading] = useState(true);
+
+  const [, setLoading] = useState(true);
   const { pushToast } = useToast();
 
   // Fetch folders and files data
@@ -308,14 +301,7 @@ export default function DocumentsPage() {
     };
   };
 
-  const rootStats = useMemo(
-    () => calculateFolderAndFileCounts(fileSystem),
-    [fileSystem]
-  );
-  const nestedStats = useMemo(
-    () => calculateFolderAndFileCounts(currentFolder),
-    [currentFolder]
-  );
+
 
   const openCreateFolder = () => setIsFolderModalOpen(true);
   const closeCreateFolder = () => setIsFolderModalOpen(false);
@@ -455,21 +441,7 @@ export default function DocumentsPage() {
     });
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
 
-  const handleFilter = (newFilters: {
-    fileType?: string;
-    dateRange?: string;
-    size?: string;
-  }) => {
-    setFilters({
-      fileType: newFilters.fileType || '',
-      dateRange: newFilters.dateRange || '',
-      size: newFilters.size || '',
-    });
-  };
 
   const handleDownloadFile = async (fileId: string, fileName: string) => {
     try {
@@ -512,67 +484,7 @@ export default function DocumentsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
 
-  // Filter files and folders based on search and filters
-  const filteredFolders = useMemo(() => {
-    let result = currentFolder.children?.filter(item => item.type === 'folder') as Folder[] || [];
-
-    if (searchQuery) {
-      result = result.filter(folder =>
-        folder.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    return result;
-  }, [currentFolder.children, searchQuery]);
-
-  const filteredFiles = useMemo(() => {
-    let result = currentFolder.children?.filter(item => item.type === 'file') as File[] || [];
-
-    if (searchQuery) {
-      result = result.filter(file =>
-        file.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Apply filters
-    if (filters.fileType) {
-      result = result.filter(file => {
-        switch (filters.fileType) {
-          case 'pdf': return file.mimeType.includes('pdf');
-          case 'image': return file.mimeType.includes('image');
-          case 'document': return file.mimeType.includes('word') || file.mimeType.includes('text');
-          case 'spreadsheet': return file.mimeType.includes('excel') || file.mimeType.includes('sheet');
-          case 'video': return file.mimeType.includes('video');
-          case 'audio': return file.mimeType.includes('audio');
-          default: return true;
-        }
-      });
-    }
-
-    if (filters.size) {
-      result = result.filter(file => {
-        switch (filters.size) {
-          case 'small': return file.size < 1024 * 1024; // < 1MB
-          case 'medium': return file.size >= 1024 * 1024 && file.size <= 10 * 1024 * 1024; // 1-10MB
-          case 'large': return file.size > 10 * 1024 * 1024; // > 10MB
-          default: return true;
-        }
-      });
-    }
-
-    return result;
-  }, [currentFolder.children, searchQuery, filters]);
-
-  const folders = filteredFolders;
-  const files = filteredFiles;
-
-  const stats = {
-    totalFolders: nestedStats.folderCount,
-    totalFiles: files.length,
-    totalSize: nestedStats.totalSize,
-    rootFolderCount: rootStats.folderCount,
-    rootFileCount: rootStats.fileCount,
-  };
+  const files = currentFolder.children?.filter(item => item.type === 'file') as File[] || [];
 
   return (
     <DashboardLayout>
@@ -653,7 +565,7 @@ export default function DocumentsPage() {
           {/* Folders Section */}
           <div className="space-y-6">
             <div className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-300 dark:hover:border-blue-600 transition-colors">
-              {/* <div className="relative p-6">
+              <div className="relative p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Documents
@@ -667,20 +579,12 @@ export default function DocumentsPage() {
                   </button>
                 </div>
                 <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 p-4 max-h-[420px] overflow-y-auto shadow-inner">
-              <FolderTree
+                  <FolderTree
                     folders={[fileSystem]}
                     onFolderClick={handleFolderClick}
                     activeFolderId={currentFolder.id}
                   />
                 </div>
-              </div> */}
-
-              <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 p-4 max-h-[420px] overflow-y-auto shadow-inner">
-                <FolderTree
-                  folders={[fileSystem]}
-                  onFolderClick={handleFolderClick}
-                  activeFolderId={currentFolder.id}
-                />
               </div>
             </div>
           </div>
@@ -695,13 +599,6 @@ export default function DocumentsPage() {
                     {currentFolder.name}
                   </h2>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={openCreateFolder}
-                      className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300 transition-colors hover:bg-blue-500/20"
-                      aria-label="Create nested folder"
-                    >
-                      <Plus className="w-4 h-4" /> Add folder
-                    </button>
                     <button
                       onClick={openUploadDrawer}
                       className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-600 dark:text-violet-300 transition-colors hover:bg-violet-500/20"

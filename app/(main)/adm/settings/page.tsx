@@ -15,12 +15,23 @@ interface UserData {
   createdAt: string;
 }
 
+// Static fallback data when API data is not available
+const staticUserData: UserData = {
+  id: 'static-user-001',
+  email: 'admin@gmail.com',
+  name: 'Admin',
+  role: 'Employee',
+  department: 'Information Technology',
+  designation: 'Software Developer',
+  createdAt: new Date().toISOString()
+};
+
 type TabType = 'profile' | 'security' | 'theme';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [bio, setBio] = useState('');
+  const [bio, setBio] = useState('This is a sample bio. Tell us about yourself, your interests, and your professional background.');
 
   // Password change states
   const [currentPassword, setCurrentPassword] = useState('');
@@ -39,7 +50,12 @@ export default function SettingsPage() {
         setUserData(parsedUser);
       } catch (error) {
         console.error('Error parsing user data from localStorage:', error);
+        // Fallback to static data if parsing fails
+        setUserData(staticUserData);
       }
+    } else {
+      // Use static data when no user data is available
+      setUserData(staticUserData);
     }
   }, []);
 
@@ -83,7 +99,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value={userData?.name || ''}
+                value={userData?.name || staticUserData.name}
                 readOnly
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white cursor-not-allowed"
                 placeholder="Enter your full name"
@@ -98,7 +114,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="email"
-                value={userData?.email || ''}
+                value={userData?.email || staticUserData.email}
                 readOnly
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white cursor-not-allowed"
                 placeholder="Enter your email"
@@ -113,7 +129,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value={userData?.role || ''}
+                value={userData?.role || staticUserData.role}
                 readOnly
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white cursor-not-allowed"
               />
@@ -127,7 +143,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value={userData?.department || ''}
+                value={userData?.department || staticUserData.department}
                 readOnly
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white cursor-not-allowed"
               />
@@ -141,7 +157,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                value={userData?.designation || ''}
+                value={userData?.designation || staticUserData.designation}
                 readOnly
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white cursor-not-allowed"
               />
@@ -275,8 +291,8 @@ export default function SettingsPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                     }`}
                 >
                   <tab.icon className="w-4 h-4" />
