@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/useToast";
 import { getFolders, createFolder } from "@/apiComponent/graphql/folder";
 import { getFiles } from "@/apiComponent/graphql/file";
 import { smartDownloadFile, getPresignedDownloadUrl } from "@/apiComponent/rest/fileDownload";
+import { useStoredLoginResponse } from "@/hooks/useStoredLoginResponse";
 
 // Create a root folder structure
 const createRootFolder = (): Folder => ({
@@ -39,6 +40,10 @@ export default function DocumentsPage() {
 
   const [, setLoading] = useState(true);
   const { pushToast } = useToast();
+  const { storedResponse } = useStoredLoginResponse();
+
+  // Check if user role is 'user' to hide Add Folder and Upload buttons
+  const isUserRole = storedResponse?.user?.role === 'user';
 
   // Fetch folders and files data
   useEffect(() => {
@@ -570,13 +575,15 @@ export default function DocumentsPage() {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Documents
                   </h2>
-                  <button
-                    onClick={openCreateFolder}
-                    className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300 transition-colors hover:bg-blue-500/20"
-                    aria-label="Create nested folder"
-                  >
-                    <Plus className="w-4 h-4" /> Add folder
-                  </button>
+                  {!isUserRole && (
+                    <button
+                      onClick={openCreateFolder}
+                      className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300 transition-colors hover:bg-blue-500/20"
+                      aria-label="Create nested folder"
+                    >
+                      <Plus className="w-4 h-4" /> Add folder
+                    </button>
+                  )}
                 </div>
                 <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 p-4 max-h-[420px] overflow-y-auto shadow-inner">
                   <FolderTree
@@ -598,15 +605,17 @@ export default function DocumentsPage() {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {currentFolder.name}
                   </h2>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={openUploadDrawer}
-                      className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-600 dark:text-violet-300 transition-colors hover:bg-violet-500/20"
-                      aria-label="Upload documents"
-                    >
-                      <Upload className="w-4 h-4" /> Upload
-                    </button>
-                  </div>
+                  {!isUserRole && (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={openUploadDrawer}
+                        className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-600 dark:text-violet-300 transition-colors hover:bg-violet-500/20"
+                        aria-label="Upload documents"
+                      >
+                        <Upload className="w-4 h-4" /> Upload
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <FolderView
                   folder={currentFolder}

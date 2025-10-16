@@ -92,9 +92,8 @@ export default function LoginPage() {
       {/* Left Section - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative z-10">
         <div
-          className={`flex flex-col justify-center items-start px-16 text-white transition-all duration-1000 ${
-            mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
-          }`}
+          className={`flex flex-col justify-center items-start px-16 text-white transition-all duration-1000 ${mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
+            }`}
         >
           {/* Brand Header */}
           <div className="mb-12">
@@ -185,9 +184,8 @@ export default function LoginPage() {
       {/* Right Section - Login Form */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 relative z-10">
         <div
-          className={`w-full max-w-md transition-all duration-1000 delay-300 ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-          }`}
+          className={`w-full max-w-md transition-all duration-1000 delay-300 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+            }`}
         >
           {/* Mobile Logo */}
           <div className="lg:hidden mb-8 text-center">
@@ -310,22 +308,6 @@ export default function LoginPage() {
                 </a>
               </div>
             </form>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs text-gray-500 text-center mb-2 font-medium">
-                Demo Credentials
-              </p>
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 text-center transform transition-all duration-300 hover:scale-[1.02]">
-                <p className="text-xs text-gray-600 font-mono">
-                  <span className="font-semibold">Email:</span>{" "}
-                  admin@example.com
-                </p>
-                <p className="text-xs text-gray-600 font-mono mt-1">
-                  <span className="font-semibold">Password:</span> password123
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Footer */}
