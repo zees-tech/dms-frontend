@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, Form, Input, Select, Button, Row, Col, message } from "antd";
+import { Modal, Form, Input, Select, Button, Row, Col, message, Collapse, Tag } from "antd";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+
+const { Panel } = Collapse;
 
 // Type definitions
 interface User {
@@ -17,19 +19,21 @@ interface User {
 interface Role {
   id: number;
   name: string;
+  permissions: string[];
+  description: string;
+}
+
+interface UserGroup {
+  id: number;
+  name: string;
+  members: number[];
+  permissions: string[];
+  description: string;
 }
 
 interface Department {
   id: number;
   name: string;
-}
-
-interface FormData {
-  name: string;
-  email: string;
-  role: string;
-  department: string;
-  status: string;
 }
 
 interface UsersTableProps {
@@ -38,16 +42,20 @@ interface UsersTableProps {
   onDelete: (id: number) => void;
 }
 
-interface RolesTableProps {
-  roles: Role[];
-  onEdit: (role: Role) => void;
-  onDelete: (id: number) => void;
-}
-
 interface DepartmentsTableProps {
   departments: Department[];
   onEdit: (department: Department) => void;
   onDelete: (id: number) => void;
+}
+
+interface AccessControlTabProps {
+  roles: Role[];
+  userGroups: UserGroup[];
+  users: User[];
+  onEditRole: (role: Role) => void;
+  onDeleteRole: (id: number) => void;
+  onEditUserGroup: (userGroup: UserGroup) => void;
+  onDeleteUserGroup: (id: number) => void;
 }
 
 export default function UsersPage() {
@@ -76,9 +84,41 @@ export default function UsersPage() {
   ]);
 
   const [roles, setRoles] = useState<Role[]>([
-    { id: 1, name: "Admin" },
-    { id: 2, name: "User" },
-    { id: 3, name: "Manager" },
+    {
+      id: 1,
+      name: "Admin",
+      permissions: ["read", "write", "delete", "manage_users"],
+      description: "Full system access"
+    },
+    {
+      id: 2,
+      name: "User",
+      permissions: ["read", "write"],
+      description: "Standard user access"
+    },
+    {
+      id: 3,
+      name: "Viewer",
+      permissions: ["read"],
+      description: "Read-only access"
+    }
+  ]);
+
+  const [userGroups, setUserGroups] = useState<UserGroup[]>([
+    {
+      id: 1,
+      name: "Engineering Team",
+      members: [1],
+      permissions: ["read", "write", "delete"],
+      description: "Engineering department team"
+    },
+    {
+      id: 2,
+      name: "Marketing Team",
+      members: [2],
+      permissions: ["read", "write"],
+      description: "Marketing department team"
+    }
   ]);
 
   const [departments, setDepartments] = useState<Department[]>([
@@ -87,7 +127,7 @@ export default function UsersPage() {
     { id: 3, name: "Sales" },
   ]);
 
-  const openModal = (item: User | Role | Department | null = null) => {
+  const openModal = (item: User | Department | Role | UserGroup | null = null) => {
     if (item) {
       setEditingId(item.id);
       if (activeTab === "users" && 'email' in item) {
@@ -98,6 +138,23 @@ export default function UsersPage() {
           department: item.department,
           status: item.status,
         });
+      } else if (activeTab === "access-control" && 'permissions' in item) {
+        if ('members' in item) {
+          // User Group
+          form.setFieldsValue({
+            name: item.name,
+            description: item.description,
+            permissions: item.permissions,
+            members: item.members,
+          });
+        } else {
+          // Role
+          form.setFieldsValue({
+            name: item.name,
+            description: item.description,
+            permissions: item.permissions,
+          });
+        }
       } else {
         form.setFieldsValue({
           name: item.name,
@@ -109,6 +166,10 @@ export default function UsersPage() {
       if (activeTab === "users") {
         form.setFieldsValue({
           status: "Active",
+        });
+      } else if (activeTab === "access-control") {
+        form.setFieldsValue({
+          permissions: ["read"],
         });
       }
     }
@@ -137,17 +198,31 @@ export default function UsersPage() {
           setUsers([...users, { id: Date.now(), ...values }]);
           message.success('User created successfully');
         }
-      } else if (activeTab === "roles") {
-        if (editingId) {
-          setRoles(
-            roles.map((role) =>
-              role.id === editingId ? { ...role, name: values.name } : role
-            )
-          );
-          message.success('Role updated successfully');
+      } else if (activeTab === "access-control") {
+        if (values.type === "role") {
+          if (editingId) {
+            setRoles(
+              roles.map((role) =>
+                role.id === editingId ? { ...role, ...values } : role
+              )
+            );
+            message.success('Role updated successfully');
+          } else {
+            setRoles([...roles, { id: Date.now(), ...values }]);
+            message.success('Role created successfully');
+          }
         } else {
-          setRoles([...roles, { id: Date.now(), name: values.name }]);
-          message.success('Role created successfully');
+          if (editingId) {
+            setUserGroups(
+              userGroups.map((group) =>
+                group.id === editingId ? { ...group, ...values } : group
+              )
+            );
+            message.success('User Group updated successfully');
+          } else {
+            setUserGroups([...userGroups, { id: Date.now(), ...values }]);
+            message.success('User Group created successfully');
+          }
         }
       } else if (activeTab === "departments") {
         if (editingId) {
@@ -175,11 +250,19 @@ export default function UsersPage() {
   const handleDelete = (id: number) => {
     if (activeTab === "users") {
       setUsers(users.filter((user) => user.id !== id));
-    } else if (activeTab === "roles") {
-      setRoles(roles.filter((role) => role.id !== id));
     } else if (activeTab === "departments") {
       setDepartments(departments.filter((dept) => dept.id !== id));
     }
+  };
+
+  const handleDeleteRole = (id: number) => {
+    setRoles(roles.filter((role) => role.id !== id));
+    message.success('Role deleted successfully');
+  };
+
+  const handleDeleteUserGroup = (id: number) => {
+    setUserGroups(userGroups.filter((group) => group.id !== id));
+    message.success('User Group deleted successfully');
   };
 
   return (
@@ -190,12 +273,12 @@ export default function UsersPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               {activeTab === "users"
                 ? "Users"
-                : activeTab === "roles"
-                  ? "Roles"
+                : activeTab === "access-control"
+                  ? "Access Control"
                   : "Departments"}
             </h1>
             <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
-              {["users", "roles", "departments"].map((tab) => (
+              {["users", "access-control", "departments"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -204,22 +287,22 @@ export default function UsersPage() {
                     : "text-gray-500 hover:text-gray-800 dark:hover:text-white"
                     }`}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === "access-control" ? "Access Control" : tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
           </div>
-          <button
-            onClick={() => openModal()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Add{" "}
-            {activeTab === "users"
-              ? "User"
-              : activeTab === "roles"
-                ? "Role"
+          {activeTab !== "access-control" && (
+            <button
+              onClick={() => openModal()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Add{" "}
+              {activeTab === "users"
+                ? "User"
                 : "Department"}
-          </button>
+            </button>
+          )}
         </div>
 
         {activeTab === "users" && (
@@ -229,11 +312,15 @@ export default function UsersPage() {
             onDelete={handleDelete}
           />
         )}
-        {activeTab === "roles" && (
-          <RolesTable
+        {activeTab === "access-control" && (
+          <AccessControlTab
             roles={roles}
-            onEdit={openModal}
-            onDelete={handleDelete}
+            userGroups={userGroups}
+            users={users}
+            onEditRole={openModal}
+            onDeleteRole={handleDeleteRole}
+            onEditUserGroup={openModal}
+            onDeleteUserGroup={handleDeleteUserGroup}
           />
         )}
         {activeTab === "departments" && (
@@ -247,14 +334,14 @@ export default function UsersPage() {
         <Modal
           title={`${editingId ? "Edit" : "Add"} ${activeTab === "users"
             ? "User"
-            : activeTab === "roles"
-              ? "Role"
+            : activeTab === "access-control"
+              ? form.getFieldValue("type") === "role" ? "Role" : "User Group"
               : "Department"
             }`}
           open={isModalOpen}
           onCancel={closeModal}
           footer={null}
-          width={activeTab === "users" ? 600 : 400}
+          width={activeTab === "users" ? 600 : activeTab === "access-control" ? 700 : 400}
         >
           <Form
             form={form}
@@ -335,15 +422,81 @@ export default function UsersPage() {
               </>
             )}
 
-            {(activeTab === "roles" || activeTab === "departments") && (
+            {activeTab === "access-control" && (
+              <>
+                {!editingId && (
+                  <Form.Item
+                    name="type"
+                    label="Type"
+                    rules={[{ required: true, message: 'Please select type' }]}
+                    initialValue="role"
+                  >
+                    <Select>
+                      <Select.Option value="role">Role</Select.Option>
+                      <Select.Option value="user-group">User Group</Select.Option>
+                    </Select>
+                  </Form.Item>
+                )}
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="name"
+                      label="Name"
+                      rules={[{ required: true, message: 'Please enter name' }]}
+                    >
+                      <Input placeholder="Enter name" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="description"
+                      label="Description"
+                      rules={[{ required: true, message: 'Please enter description' }]}
+                    >
+                      <Input placeholder="Enter description" />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Form.Item
+                  name="permissions"
+                  label="Permissions"
+                  rules={[{ required: true, message: 'Please select permissions' }]}
+                >
+                  <Select mode="multiple" placeholder="Select permissions">
+                    <Select.Option value="read">Read</Select.Option>
+                    <Select.Option value="write">Write</Select.Option>
+                    <Select.Option value="delete">Delete</Select.Option>
+                    <Select.Option value="manage_users">Manage Users</Select.Option>
+                    <Select.Option value="manage_roles">Manage Roles</Select.Option>
+                    <Select.Option value="manage_files">Manage Files</Select.Option>
+                  </Select>
+                </Form.Item>
+                {form.getFieldValue("type") === "user-group" && (
+                  <Form.Item
+                    name="members"
+                    label="Members"
+                  >
+                    <Select mode="multiple" placeholder="Select members">
+                      {users.map((user) => (
+                        <Select.Option key={user.id} value={user.id}>
+                          {user.name} ({user.email})
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                )}
+              </>
+            )}
+
+            {activeTab === "departments" && (
               <Row>
                 <Col span={24}>
                   <Form.Item
                     name="name"
-                    label={activeTab === "roles" ? "Role Name" : "Department Name"}
-                    rules={[{ required: true, message: `Please enter ${activeTab === "roles" ? "role" : "department"} name` }]}
+                    label="Department Name"
+                    rules={[{ required: true, message: 'Please enter department name' }]}
                   >
-                    <Input placeholder={`Enter ${activeTab === "roles" ? "role" : "department"} name`} />
+                    <Input placeholder="Enter department name" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -462,49 +615,135 @@ function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
   );
 }
 
-function RolesTable({ roles, onEdit, onDelete }: RolesTableProps) {
+function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, onEditUserGroup, onDeleteUserGroup }: AccessControlTabProps) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          All Roles ({roles.length})
-        </h3>
-      </div>
-      <table className="w-full">
-        <thead className="bg-gray-50 dark:bg-gray-700">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              Role Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+    <div className="space-y-6">
+      {/* Roles Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Roles ({roles.length})
+          </h3>
+        </div>
+        <Collapse ghost>
           {roles.map((role) => (
-            <tr key={role.id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                {role.name}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button
-                  onClick={() => onEdit(role)}
-                  className="text-blue-600 hover:text-blue-900 mr-3"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDelete(role.id)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
+            <Panel 
+              header={
+                <div className="flex justify-between items-center w-full">
+                  <span className="font-medium">{role.name}</span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditRole(role);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteRole(role.id);
+                      }}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              }
+              key={role.id}
+            >
+              <div className="space-y-3">
+                <div>
+                  <span className="font-medium">Description:</span> {role.description}
+                </div>
+                <div>
+                  <span className="font-medium">Permissions:</span>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {role.permissions.map((permission) => (
+                      <Tag key={permission} color="blue">
+                        {permission}
+                      </Tag>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Panel>
           ))}
-        </tbody>
-      </table>
+        </Collapse>
+      </div>
+
+      {/* User Groups Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            User Groups ({userGroups.length})
+          </h3>
+        </div>
+        <Collapse ghost>
+          {userGroups.map((group) => (
+            <Panel 
+              header={
+                <div className="flex justify-between items-center w-full">
+                  <span className="font-medium">{group.name}</span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditUserGroup(group);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteUserGroup(group.id);
+                      }}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              }
+              key={group.id}
+            >
+              <div className="space-y-3">
+                <div>
+                  <span className="font-medium">Description:</span> {group.description}
+                </div>
+                <div>
+                  <span className="font-medium">Members:</span>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {group.members.map((memberId) => {
+                      const member = users.find(u => u.id === memberId);
+                      return member ? (
+                        <Tag key={memberId} color="green">
+                          {member.name}
+                        </Tag>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium">Permissions:</span>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {group.permissions.map((permission) => (
+                      <Tag key={permission} color="blue">
+                        {permission}
+                      </Tag>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Panel>
+          ))}
+        </Collapse>
+      </div>
     </div>
   );
 }
