@@ -15,14 +15,14 @@ interface Folder {
   parentId?: string;
 }
 
-import { AssignmentType } from "../../../../../apiComponent/graphql/generated/graphql";
+import { AssigneeInfo } from "@/apiComponent/graphql/generated/graphql";
 
-interface AssigneeInfo {
-  id: string;
-  name: string;
-  type: AssignmentType;
-  description?: string | null;
-}
+// interface AssigneeInfo {
+//   id: string;
+//   name: string;
+//   type: AssignmentType;
+//   description?: string | null;
+// }
 
 interface PermissionAssignment {
   [folderId: string]: {
