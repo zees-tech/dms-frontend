@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react';
 import { Folder } from '@/types/file-system';
 import {
-    uploadFiles,
     generatePresignedUrl,
     uploadFileWithPresignedUrl,
     completeUpload
@@ -21,7 +20,7 @@ import {
     Clock,
     FolderOpen
 } from 'lucide-react';
-import { createFile } from '@/apiComponent/graphql/file';
+import DocumentSettingsModal, { DocumentSettings } from './DocumentSettingsModal';
 
 interface FileUploadDrawerProps {
     isOpen: boolean;
@@ -33,8 +32,9 @@ interface FileUploadDrawerProps {
 interface UploadFile {
     file: File;
     progress: number;
-    status: 'pending' | 'uploading' | 'completed' | 'error';
+    status: 'pending' | 'uploading' | 'completed' | 'error' | 'configuring';
     id: string;
+    settings?: DocumentSettings;
 }
 
 export default function FileUploadDrawer({
@@ -45,6 +45,8 @@ export default function FileUploadDrawer({
 }: FileUploadDrawerProps) {
     const [uploadFilesState, setUploadFilesState] = useState<UploadFile[]>([]);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [currentConfigFile, setCurrentConfigFile] = useState<UploadFile | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = (files: FileList | null) => {
@@ -53,11 +55,17 @@ export default function FileUploadDrawer({
         const newFiles: UploadFile[] = Array.from(files).map((file) => ({
             file: file,
             progress: 0,
-            status: 'pending',
-            id: Math.random().toString(36).substr(2, 9),
+            status: 'configuring',
+            id: Math.random().toString(36).substring(2, 9),
         }));
 
         setUploadFilesState(prev => [...prev, ...newFiles]);
+
+        // Show settings modal for the first file
+        if (newFiles.length > 0) {
+            setCurrentConfigFile(newFiles[0]);
+            setShowSettingsModal(true);
+        }
     };
 
     const handleDrop = (e: React.DragEvent) => {
@@ -80,10 +88,86 @@ export default function FileUploadDrawer({
         setUploadFilesState(prev => prev.filter(f => f.id !== id));
     };
 
+    const handleSettingsConfirm = (settings: DocumentSettings) => {
+        if (!currentConfigFile) return;
+
+        console.log('Received settings for file:', currentConfigFile.file.name, settings);
+
+        // Apply settings to current file and mark as pending
+        setUploadFilesState(prev =>
+            prev.map(f =>
+                f.id === currentConfigFile.id
+                    ? { ...f, status: 'pending', settings }
+                    : f
+            )
+        );
+
+        // Find next file that needs configuration
+        const nextConfigFile = uploadFilesState.find(
+            f => f.status === 'configuring' && f.id !== currentConfigFile.id
+        );
+
+        if (nextConfigFile) {
+            setCurrentConfigFile(nextConfigFile);
+            // Modal stays open for next file
+        } else {
+            // All files configured, close modal and start upload
+            setCurrentConfigFile(null);
+            setShowSettingsModal(false);
+
+            // Auto-start upload once all files are configured
+            setTimeout(() => {
+                console.log('Starting upload with configured settings...');
+                startUpload();
+            }, 100);
+        }
+    };
+
+    const handleSettingsCancel = () => {
+        if (currentConfigFile) {
+            // Remove the file being configured
+            removeFile(currentConfigFile.id);
+        }
+        setCurrentConfigFile(null);
+        setShowSettingsModal(false);
+    };
+
+    const handleSkipAllSettings = () => {
+        console.log('Skipping settings for all files');
+
+        // Apply default settings to all configuring files
+        const defaultSettings: DocumentSettings = {
+            hasExpiration: false,
+            isSecret: false
+        };
+
+        setUploadFilesState(prev =>
+            prev.map(f =>
+                f.status === 'configuring'
+                    ? { ...f, status: 'pending', settings: defaultSettings }
+                    : f
+            )
+        );
+
+        setCurrentConfigFile(null);
+        setShowSettingsModal(false);
+
+        // Auto-start upload
+        setTimeout(() => {
+            console.log('Starting upload with default settings for all files...');
+            startUpload();
+        }, 100);
+    };
+
     const startUpload = async () => {
         const pendingFiles = uploadFilesState.filter(f => f.status === 'pending');
 
-        if (pendingFiles.length === 0) return;
+        console.log('Starting upload for files:', pendingFiles.map(f => ({ name: f.file.name, settings: f.settings })));
+
+        if (pendingFiles.length === 0) {
+            console.log('No pending files to upload');
+            return;
+        }
 
         try {
             // Update all pending files to uploading status
@@ -121,7 +205,17 @@ export default function FileUploadDrawer({
                     const token = localStorage.getItem("auth-token");
                     const refresh_token = "";
 
-                    // Complete the upload by storing file metadata
+                    // Complete the upload by storing file metadata with settings
+                    console.log('Uploading file with settings:', uploadFile.file.name, uploadFile.settings);
+                    console.log('API call parameters:', {
+                        fileKey: presignedUrlResponse.fileKey,
+                        fileName: uploadFile.file.name,
+                        fileSize: uploadFile.file.size,
+                        contentType: uploadFile.file.type || 'application/octet-stream',
+                        folderId: currentFolder.id,
+                        settings: uploadFile.settings
+                    });
+
                     const completeResponse = await completeUpload(
                         presignedUrlResponse.fileKey,
                         uploadFile.file.name,
@@ -129,8 +223,11 @@ export default function FileUploadDrawer({
                         uploadFile.file.type || 'application/octet-stream',
                         currentFolder.id,
                         token || "",
-                        refresh_token || ""
+                        refresh_token,
+                        uploadFile.settings
                     );
+
+                    console.log('Upload completed successfully:', completeResponse);
 
                     // Mark file as completed
                     setUploadFilesState(prev =>
@@ -142,6 +239,11 @@ export default function FileUploadDrawer({
                     return { success: true, file: uploadFile.file, metadata: completeResponse.fileMetadata };
                 } catch (error) {
                     console.error(`Upload failed for ${uploadFile.file.name}:`, error);
+                    console.error('Error details:', {
+                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                        errorStack: error instanceof Error ? error.stack : 'No stack trace',
+                        fileSettings: uploadFile.settings
+                    });
 
                     // Mark file as failed with error message
                     setUploadFilesState(prev =>
@@ -335,8 +437,29 @@ export default function FileUploadDrawer({
                                                     </span>
                                                 )}
                                                 {uploadFile.status === 'pending' && (
-                                                    <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                                                        <Clock className="w-3 h-3" /> Pending
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                                            <Clock className="w-3 h-3" /> Ready
+                                                        </span>
+                                                        {uploadFile.settings && (
+                                                            <div className="flex gap-1">
+                                                                {uploadFile.settings.hasExpiration && (
+                                                                    <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-1 py-0.5 rounded">
+                                                                        Expires
+                                                                    </span>
+                                                                )}
+                                                                {uploadFile.settings.isSecret && (
+                                                                    <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-1 py-0.5 rounded">
+                                                                        Protected
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {uploadFile.status === 'configuring' && (
+                                                    <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                                                        <Clock className="w-3 h-3" /> Configuring...
                                                     </span>
                                                 )}
                                             </div>
@@ -360,15 +483,31 @@ export default function FileUploadDrawer({
                             </button>
                             <button
                                 onClick={startUpload}
-                                disabled={uploadFilesState.filter(f => f.status === 'pending').length === 0}
+                                disabled={
+                                    uploadFilesState.filter(f => f.status === 'pending').length === 0 ||
+                                    uploadFilesState.some(f => f.status === 'configuring')
+                                }
                                 className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                Upload {uploadFilesState.filter(f => f.status === 'pending').length} Files
+                                {uploadFilesState.some(f => f.status === 'configuring')
+                                    ? 'Configure Files First'
+                                    : `Upload ${uploadFilesState.filter(f => f.status === 'pending').length} Files`
+                                }
                             </button>
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Document Settings Modal */}
+            <DocumentSettingsModal
+                isOpen={showSettingsModal}
+                onClose={handleSettingsCancel}
+                onConfirm={handleSettingsConfirm}
+                onSkipAll={handleSkipAllSettings}
+                fileName={currentConfigFile?.file.name || ''}
+                hasMultipleFiles={uploadFilesState.filter(f => f.status === 'configuring').length > 1}
+            />
         </div>
     );
 }

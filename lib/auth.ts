@@ -1,5 +1,5 @@
 import { login } from "@/apiComponent/rest/login";
-import { User } from "@/types/auth";
+import { User, LoginResponse } from "@/types/auth";
 
 export interface AuthState {
     user: User | null;
@@ -10,31 +10,24 @@ export interface AuthState {
 // Auth service that connects to your API
 export const authService = {
     async login(email: string, password: string): Promise<User> {
-        // const response = await fetch('/api/auth', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify({ email, password, action: 'login' }),
-        // });
-
         const response = await login(email, password);
 
         if (!response) {
-            const error = await response;
-            throw new Error(error || 'Login failed');
+            throw new Error('Login failed');
         }
 
-        const data = await response;
+        // Store the complete API response in localStorage
+        localStorage.setItem('auth-response', JSON.stringify(response));
 
-        // Store token in localStorage (in production, use httpOnly cookies)
-        localStorage.setItem('auth-token', data.token);
+        // Store token separately for easy access (in production, use httpOnly cookies)
+        localStorage.setItem('auth-token', response.token);
 
-        return data.user;
+        return response.user;
     },
 
     async logout(): Promise<void> {
         localStorage.removeItem('auth-token');
+        localStorage.removeItem('auth-response');
     },
 
     async getCurrentUser(): Promise<User | null> {
@@ -60,6 +53,7 @@ export const authService = {
             return data.user;
         } catch (error) {
             localStorage.removeItem('auth-token');
+            localStorage.removeItem('auth-response');
             return null;
         }
     },
@@ -84,5 +78,21 @@ export const authService = {
         localStorage.setItem('auth-token', data.token);
 
         return data.user;
+    },
+
+    // Get the complete stored API response
+    getStoredLoginResponse(): LoginResponse | null {
+        const storedResponse = localStorage.getItem('auth-response');
+        if (!storedResponse) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(storedResponse);
+        } catch (error) {
+            console.error('Error parsing stored auth response:', error);
+            localStorage.removeItem('auth-response');
+            return null;
+        }
     }
 };

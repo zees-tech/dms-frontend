@@ -7,12 +7,23 @@ query PermissionAssignees($AssigneeInfoFilterInput: AssigneeInfoFilterInput){
  }
 }
 
-query Permissions($assignedToId: UUID!) {
-  folderPermissionAssignmentsByAssignedToId(assignedToId: $assignedToId) {
-    id
+query AssignedPermission($assignedToId: UUID!){
+   folderPermissionAssignmentsByAssignedToId(assignedToId: $assignedToId){
+    id    
     folderPermission{
-      folderId
-      permissionId
+        folderId
+        permissionId
     }
+    assignedToId
+    assignmentType
+   }
+}
+
+query PermissionList {
+  permissions {
+    id
+    name
+    _For
+    allowed
   }
 }

@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, Form, Input, Select, Button, Row, Col, message, Collapse, Tag } from "antd";
+import { Edit, Trash2 } from "lucide-react";
+import { getPermissionsAssigneeList } from "@/apiComponent/graphql/permission";
+import { AssigneeInfo as GraphQLAssigneeInfo, AssignmentType } from "@/apiComponent/graphql/generated/graphql";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-
-const { Panel } = Collapse;
+import UserForm from "./ui/UserForm";
+import UserGroupForm from "./ui/UserGroupForm";
+import RoleForm from "./ui/RoleForm";
+import DepartmentForm from "./ui/DepartmentForm";
 
 // Type definitions
 interface User {
@@ -16,24 +21,24 @@ interface User {
   status: string;
 }
 
+interface Department {
+  id: number;
+  name: string;
+}
+
 interface Role {
   id: number;
   name: string;
-  permissions: string[];
   description: string;
+  permissions: string[];
 }
 
 interface UserGroup {
   id: number;
   name: string;
+  description: string;
   members: number[];
   permissions: string[];
-  description: string;
-}
-
-interface Department {
-  id: number;
-  name: string;
 }
 
 interface UsersTableProps {
@@ -49,13 +54,13 @@ interface DepartmentsTableProps {
 }
 
 interface AccessControlTabProps {
-  roles: Role[];
-  userGroups: UserGroup[];
-  users: User[];
-  onEditRole: (role: Role) => void;
+  assignees: GraphQLAssigneeInfo[];
+  onEditRole: (role: GraphQLAssigneeInfo) => void;
   onDeleteRole: (id: number) => void;
-  onEditUserGroup: (userGroup: UserGroup) => void;
+  onEditUserGroup: (userGroup: GraphQLAssigneeInfo) => void;
   onDeleteUserGroup: (id: number) => void;
+  onAddRole: () => void;
+  onAddUserGroup: () => void;
 }
 
 export default function UsersPage() {
@@ -83,43 +88,7 @@ export default function UsersPage() {
     },
   ]);
 
-  const [roles, setRoles] = useState<Role[]>([
-    {
-      id: 1,
-      name: "Admin",
-      permissions: ["read", "write", "delete", "manage_users"],
-      description: "Full system access"
-    },
-    {
-      id: 2,
-      name: "User",
-      permissions: ["read", "write"],
-      description: "Standard user access"
-    },
-    {
-      id: 3,
-      name: "Viewer",
-      permissions: ["read"],
-      description: "Read-only access"
-    }
-  ]);
-
-  const [userGroups, setUserGroups] = useState<UserGroup[]>([
-    {
-      id: 1,
-      name: "Engineering Team",
-      members: [1],
-      permissions: ["read", "write", "delete"],
-      description: "Engineering department team"
-    },
-    {
-      id: 2,
-      name: "Marketing Team",
-      members: [2],
-      permissions: ["read", "write"],
-      description: "Marketing department team"
-    }
-  ]);
+  const [assignees, setAssignees] = useState<GraphQLAssigneeInfo[]>([]);
 
   const [departments, setDepartments] = useState<Department[]>([
     { id: 1, name: "Engineering" },
@@ -127,9 +96,31 @@ export default function UsersPage() {
     { id: 3, name: "Sales" },
   ]);
 
-  const openModal = (item: User | Department | Role | UserGroup | null = null) => {
+  // Fetch assignees from API
+  useEffect(() => {
+    const fetchAssignees = async () => {
+      try {
+        const { data, error } = await getPermissionsAssigneeList();
+        if (error) {
+          console.error('Error fetching assignees:', error);
+          message.error('Failed to load assignees');
+          return;
+        }
+        if (data?.permissionAssignees) {
+          setAssignees(data.permissionAssignees);
+        }
+      } catch (err) {
+        console.error('Error fetching assignees:', err);
+        message.error('Failed to load assignees');
+      }
+    };
+
+    fetchAssignees();
+  }, []);
+
+  const openModal = (item: User | Department | GraphQLAssigneeInfo | null = null) => {
     if (item) {
-      setEditingId(item.id);
+      setEditingId(typeof item.id === 'string' ? parseInt(item.id) : item.id);
       if (activeTab === "users" && 'email' in item) {
         form.setFieldsValue({
           name: item.name,
@@ -138,21 +129,20 @@ export default function UsersPage() {
           department: item.department,
           status: item.status,
         });
-      } else if (activeTab === "access-control" && 'permissions' in item) {
-        if ('members' in item) {
+      } else if (activeTab === "access-control" && 'type' in item) {
+        if (item.type === "GROUP") {
           // User Group
           form.setFieldsValue({
             name: item.name,
-            description: item.description,
-            permissions: item.permissions,
-            members: item.members,
+            description: item.description || '',
+            type: "user-group",
           });
         } else {
           // Role
           form.setFieldsValue({
             name: item.name,
-            description: item.description,
-            permissions: item.permissions,
+            description: item.description || '',
+            type: "role",
           });
         }
       } else {
@@ -199,30 +189,11 @@ export default function UsersPage() {
           message.success('User created successfully');
         }
       } else if (activeTab === "access-control") {
-        if (values.type === "role") {
-          if (editingId) {
-            setRoles(
-              roles.map((role) =>
-                role.id === editingId ? { ...role, ...values } : role
-              )
-            );
-            message.success('Role updated successfully');
-          } else {
-            setRoles([...roles, { id: Date.now(), ...values }]);
-            message.success('Role created successfully');
-          }
+        // For now, we'll just show a message since the API handles creation/updates
+        if (editingId) {
+          message.success('Assignee updated successfully');
         } else {
-          if (editingId) {
-            setUserGroups(
-              userGroups.map((group) =>
-                group.id === editingId ? { ...group, ...values } : group
-              )
-            );
-            message.success('User Group updated successfully');
-          } else {
-            setUserGroups([...userGroups, { id: Date.now(), ...values }]);
-            message.success('User Group created successfully');
-          }
+          message.success('Assignee created successfully');
         }
       } else if (activeTab === "departments") {
         if (editingId) {
@@ -256,13 +227,50 @@ export default function UsersPage() {
   };
 
   const handleDeleteRole = (id: number) => {
-    setRoles(roles.filter((role) => role.id !== id));
+    setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
     message.success('Role deleted successfully');
   };
 
   const handleDeleteUserGroup = (id: number) => {
-    setUserGroups(userGroups.filter((group) => group.id !== id));
+    setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
     message.success('User Group deleted successfully');
+  };
+
+  const renderFormContent = () => {
+    switch (activeTab) {
+      case "users":
+        return <UserForm form={form} roles={assignees.filter(a => a.type === AssignmentType.Role)} departments={departments} />;
+      case "access-control":
+        const type = form.getFieldValue("type");
+        if (type === "user-group") {
+          return <UserGroupForm form={form} users={users} editingId={editingId} />;
+        } else {
+          return <RoleForm form={form} editingId={editingId} />;
+        }
+      case "departments":
+        return <DepartmentForm form={form} />;
+      default:
+        return null;
+    }
+  };
+
+  const getModalTitle = () => {
+    const baseTitle = `${editingId ? "Edit" : "Add"} `;
+    
+    if (activeTab === "users") {
+      return baseTitle + "User";
+    } else if (activeTab === "access-control") {
+      const type = form.getFieldValue("type");
+      return baseTitle + (type === "role" ? "Role" : "User Group");
+    } else {
+      return baseTitle + "Department";
+    }
+  };
+
+  const getModalWidth = () => {
+    if (activeTab === "users") return 600;
+    if (activeTab === "access-control") return 700;
+    return 400;
   };
 
   return (
@@ -314,13 +322,19 @@ export default function UsersPage() {
         )}
         {activeTab === "access-control" && (
           <AccessControlTab
-            roles={roles}
-            userGroups={userGroups}
-            users={users}
+            assignees={assignees}
             onEditRole={openModal}
             onDeleteRole={handleDeleteRole}
             onEditUserGroup={openModal}
             onDeleteUserGroup={handleDeleteUserGroup}
+            onAddRole={() => {
+              form.setFieldsValue({ type: "role" });
+              openModal();
+            }}
+            onAddUserGroup={() => {
+              form.setFieldsValue({ type: "user-group" });
+              openModal();
+            }}
           />
         )}
         {activeTab === "departments" && (
@@ -332,175 +346,18 @@ export default function UsersPage() {
         )}
 
         <Modal
-          title={`${editingId ? "Edit" : "Add"} ${activeTab === "users"
-            ? "User"
-            : activeTab === "access-control"
-              ? form.getFieldValue("type") === "role" ? "Role" : "User Group"
-              : "Department"
-            }`}
+          title={getModalTitle()}
           open={isModalOpen}
           onCancel={closeModal}
           footer={null}
-          width={activeTab === "users" ? 600 : activeTab === "access-control" ? 700 : 400}
+          width={getModalWidth()}
         >
           <Form
             form={form}
             layout="vertical"
             onFinish={handleSubmit}
           >
-            {activeTab === "users" && (
-              <>
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="name"
-                      label="Name"
-                      rules={[{ required: true, message: 'Please enter name' }]}
-                    >
-                      <Input placeholder="Enter name" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="email"
-                      label="Email"
-                      rules={[
-                        { required: true, message: 'Please enter email' },
-                        { type: 'email', message: 'Please enter valid email' }
-                      ]}
-                    >
-                      <Input placeholder="Enter email" />
-                    </Form.Item>
-                  </Col>
-                </Row>
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="role"
-                      label="Role"
-                      rules={[{ required: true, message: 'Please select role' }]}
-                    >
-                      <Select placeholder="Select Role">
-                        {roles.map((role) => (
-                          <Select.Option key={role.id} value={role.name}>
-                            {role.name}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="department"
-                      label="Department"
-                      rules={[{ required: true, message: 'Please select department' }]}
-                    >
-                      <Select placeholder="Select Department">
-                        {departments.map((dept) => (
-                          <Select.Option key={dept.id} value={dept.name}>
-                            {dept.name}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                </Row>
-                <Row>
-                  <Col span={24}>
-                    <Form.Item
-                      name="status"
-                      label="Status"
-                      rules={[{ required: true, message: 'Please select status' }]}
-                    >
-                      <Select>
-                        <Select.Option value="Active">Active</Select.Option>
-                        <Select.Option value="Inactive">Inactive</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </>
-            )}
-
-            {activeTab === "access-control" && (
-              <>
-                {!editingId && (
-                  <Form.Item
-                    name="type"
-                    label="Type"
-                    rules={[{ required: true, message: 'Please select type' }]}
-                    initialValue="role"
-                  >
-                    <Select>
-                      <Select.Option value="role">Role</Select.Option>
-                      <Select.Option value="user-group">User Group</Select.Option>
-                    </Select>
-                  </Form.Item>
-                )}
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="name"
-                      label="Name"
-                      rules={[{ required: true, message: 'Please enter name' }]}
-                    >
-                      <Input placeholder="Enter name" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="description"
-                      label="Description"
-                      rules={[{ required: true, message: 'Please enter description' }]}
-                    >
-                      <Input placeholder="Enter description" />
-                    </Form.Item>
-                  </Col>
-                </Row>
-                <Form.Item
-                  name="permissions"
-                  label="Permissions"
-                  rules={[{ required: true, message: 'Please select permissions' }]}
-                >
-                  <Select mode="multiple" placeholder="Select permissions">
-                    <Select.Option value="read">Read</Select.Option>
-                    <Select.Option value="write">Write</Select.Option>
-                    <Select.Option value="delete">Delete</Select.Option>
-                    <Select.Option value="manage_users">Manage Users</Select.Option>
-                    <Select.Option value="manage_roles">Manage Roles</Select.Option>
-                    <Select.Option value="manage_files">Manage Files</Select.Option>
-                  </Select>
-                </Form.Item>
-                {form.getFieldValue("type") === "user-group" && (
-                  <Form.Item
-                    name="members"
-                    label="Members"
-                  >
-                    <Select mode="multiple" placeholder="Select members">
-                      {users.map((user) => (
-                        <Select.Option key={user.id} value={user.id}>
-                          {user.name} ({user.email})
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                )}
-              </>
-            )}
-
-            {activeTab === "departments" && (
-              <Row>
-                <Col span={24}>
-                  <Form.Item
-                    name="name"
-                    label="Department Name"
-                    rules={[{ required: true, message: 'Please enter department name' }]}
-                  >
-                    <Input placeholder="Enter department name" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            )}
+            {renderFormContent()}
 
             <Row gutter={16} style={{ marginTop: 16 }}>
               <Col span={12}>
@@ -593,18 +450,22 @@ function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => onEdit(user)}
-                    className="text-blue-600 hover:text-blue-900 mr-3"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => onDelete(user.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => onEdit(user)}
+                      className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit user"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(user.id)}
+                      className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                      title="Delete user"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -615,134 +476,130 @@ function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
   );
 }
 
-function AccessControlTab({ roles, userGroups, users, onEditRole, onDeleteRole, onEditUserGroup, onDeleteUserGroup }: AccessControlTabProps) {
+function AccessControlTab({ assignees, onEditRole, onDeleteRole, onEditUserGroup, onDeleteUserGroup, onAddRole, onAddUserGroup }: AccessControlTabProps) {
+  const roles = assignees.filter(assignee => assignee.type === AssignmentType.Role);
+  const userGroups = assignees.filter(assignee => assignee.type === AssignmentType.Group);
+
+  const roleItems = roles.map((role) => ({
+    key: role.id,
+    label: (
+      <div className="flex justify-between items-center w-full">
+        <span className="font-medium">{role.name}</span>
+        <div className="flex space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditRole(role);
+            }}
+            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+            title="Edit role"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteRole(parseInt(role.id));
+            }}
+            className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+            title="Delete role"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    ),
+    children: (
+      <div className="space-y-3">
+        <div>
+          <span className="font-medium">Description:</span> {role.description || 'No description'}
+        </div>
+        <div>
+          <span className="font-medium">Permissions:</span>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <span className="text-gray-500">Permissions managed via API</span>
+          </div>
+        </div>
+      </div>
+    ),
+  }));
+
+  const userGroupItems = userGroups.map((group) => ({
+    key: group.id,
+    label: (
+      <div className="flex justify-between items-center w-full">
+        <span className="font-medium">{group.name}</span>
+        <div className="flex space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditUserGroup(group);
+            }}
+            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+            title="Edit user group"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteUserGroup(parseInt(group.id));
+            }}
+            className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+            title="Delete user group"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    ),
+    children: (
+      <div className="space-y-3">
+        <div>
+          <span className="font-medium">Description:</span> {group.description || 'No description'}
+        </div>
+        <div>
+          <span className="font-medium">Permissions:</span>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <span className="text-gray-500">Permissions managed via API</span>
+          </div>
+        </div>
+      </div>
+    ),
+  }));
+
   return (
     <div className="space-y-6">
       {/* Roles Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Roles ({roles.length})
           </h3>
+          <button
+            onClick={onAddRole}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+          >
+            Add Role
+          </button>
         </div>
-        <Collapse ghost>
-          {roles.map((role) => (
-            <Panel 
-              header={
-                <div className="flex justify-between items-center w-full">
-                  <span className="font-medium">{role.name}</span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditRole(role);
-                      }}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteRole(role.id);
-                      }}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              }
-              key={role.id}
-            >
-              <div className="space-y-3">
-                <div>
-                  <span className="font-medium">Description:</span> {role.description}
-                </div>
-                <div>
-                  <span className="font-medium">Permissions:</span>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {role.permissions.map((permission) => (
-                      <Tag key={permission} color="blue">
-                        {permission}
-                      </Tag>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Panel>
-          ))}
-        </Collapse>
+        <Collapse ghost items={roleItems} />
       </div>
 
       {/* User Groups Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             User Groups ({userGroups.length})
           </h3>
+          <button
+            onClick={onAddUserGroup}
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+          >
+            Add User Group
+          </button>
         </div>
-        <Collapse ghost>
-          {userGroups.map((group) => (
-            <Panel 
-              header={
-                <div className="flex justify-between items-center w-full">
-                  <span className="font-medium">{group.name}</span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditUserGroup(group);
-                      }}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteUserGroup(group.id);
-                      }}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              }
-              key={group.id}
-            >
-              <div className="space-y-3">
-                <div>
-                  <span className="font-medium">Description:</span> {group.description}
-                </div>
-                <div>
-                  <span className="font-medium">Members:</span>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {group.members.map((memberId) => {
-                      const member = users.find(u => u.id === memberId);
-                      return member ? (
-                        <Tag key={memberId} color="green">
-                          {member.name}
-                        </Tag>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-medium">Permissions:</span>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {group.permissions.map((permission) => (
-                      <Tag key={permission} color="blue">
-                        {permission}
-                      </Tag>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Panel>
-          ))}
-        </Collapse>
+        <Collapse ghost items={userGroupItems} />
       </div>
     </div>
   );
@@ -774,18 +631,22 @@ function DepartmentsTable({ departments, onEdit, onDelete }: DepartmentsTablePro
                 {dept.name}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button
-                  onClick={() => onEdit(dept)}
-                  className="text-blue-600 hover:text-blue-900 mr-3"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDelete(dept.id)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => onEdit(dept)}
+                    className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                    title="Edit department"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onDelete(dept.id)}
+                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                    title="Delete department"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

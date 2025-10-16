@@ -228,6 +228,9 @@ export async function uploadFileWithPresignedUrl(
  * @param fileSize - Size of the file in bytes
  * @param contentType - MIME type of the file
  * @param folderId - The ID of the folder where the file was uploaded
+ * @param token - Authentication token
+ * @param refresh_token - Refresh token
+ * @param documentSettings - Optional document settings (expiration, password protection)
  * @returns Promise with upload completion response
  */
 export async function completeUpload(
@@ -237,7 +240,13 @@ export async function completeUpload(
   contentType: string,
   folderId: string,
   token: string,
-  refresh_token?: string
+  refresh_token?: string,
+  documentSettings?: {
+    hasExpiration?: boolean;
+    expirationDate?: string;
+    isSecret?: boolean;
+    password?: string;
+  }
 ): Promise<UploadCompleteResponse> {
   try {
     const client = await createServerClient(
@@ -254,6 +263,7 @@ export async function completeUpload(
         fileSize,
         contentType,
         folderId,
+        documentSettings,
       }
     );
 
