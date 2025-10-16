@@ -275,10 +275,10 @@ export default function DocumentManagementDashboard() {
                             />
                         </div>
                         {/* Upload Button */}
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                        {/* <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
                             <FileText className="w-4 h-4" />
                             Upload Document
-                        </button>
+                        </button> */}
                     </div>
                 </div>
 
