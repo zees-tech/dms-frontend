@@ -1,0 +1,18 @@
+query PermissionAssignees($AssigneeInfoFilterInput: AssigneeInfoFilterInput){
+ permissionAssignees(where: $AssigneeInfoFilterInput){
+  id,
+  name
+  type
+  description
+ }
+}
+
+query Permissions($assignedToId: UUID!) {
+  folderPermissionAssignmentsByAssignedToId(assignedToId: $assignedToId) {
+    id
+    folderPermission{
+      folderId
+      permissionId
+    }
+  }
+}
