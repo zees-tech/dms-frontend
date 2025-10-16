@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Plus, Upload } from 'lucide-react';
 import FolderTree from "@/components/documents/FolderTree";
 import FolderView from "@/components/documents/FolderView";
+import FilePreview from "@/components/documents/FilePreview";
 import Breadcrumb from "@/components/documents/Breadcrumb";
 import DocumentActionsPanel from "@/components/documents/DocumentActionsPanel";
 import CreateFolderModal from "@/components/documents/CreateFolderModal";
@@ -15,7 +16,7 @@ import { Folder, File } from "@/types/file-system";
 import { useToast } from "@/hooks/useToast";
 import { getFolders, createFolder } from "@/apiComponent/graphql/folder";
 import { getFiles } from "@/apiComponent/graphql/file";
-import { downloadFile, smartDownloadFile } from "@/apiComponent/rest/fileDownload";
+import { downloadFile, smartDownloadFile, getPresignedDownloadUrl } from "@/apiComponent/rest/fileDownload";
 
 // Create a root folder structure
 const createRootFolder = (): Folder => ({
@@ -35,6 +36,8 @@ export default function DocumentsPage() {
   const [breadcrumb, setBreadcrumb] = useState<Folder[]>([createRootFolder()]);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isUploadDrawerOpen, setIsUploadDrawerOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     fileType: '',
@@ -49,7 +52,7 @@ export default function DocumentsPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch folders
         const foldersResult = await getFolders();
         if (foldersResult.error) {
@@ -69,7 +72,7 @@ export default function DocumentsPage() {
         // Build the folder tree structure
         const buildFolderTree = (folders: typeof apiFolders): Folder => {
           const rootFolder = createRootFolder();
-          
+
           // Add folders to the root
           const folderMap = new Map<string, Folder>();
           folderMap.set('root', rootFolder);
@@ -94,7 +97,7 @@ export default function DocumentsPage() {
             const parentId = folder.parentId || 'root';
             const parent = folderMap.get(parentId);
             const current = folderMap.get(folder.id);
-            
+
             if (parent && current) {
               if (!parent.children) parent.children = [];
               parent.children.push(current);
@@ -105,7 +108,7 @@ export default function DocumentsPage() {
           apiFiles.forEach(file => {
             const parentId = file.parentId || 'root';
             const parent = folderMap.get(parentId);
-            
+
             if (parent) {
               const fileNode: File = {
                 id: file.id,
@@ -119,7 +122,7 @@ export default function DocumentsPage() {
                 updatedAt: file.updatedAt,
                 url: '', // Will be generated when needed
               };
-              
+
               if (!parent.children) parent.children = [];
               parent.children.push(fileNode);
             }
@@ -319,6 +322,48 @@ export default function DocumentsPage() {
   const openUploadDrawer = () => setIsUploadDrawerOpen(true);
   const closeUploadDrawer = () => setIsUploadDrawerOpen(false);
 
+  const handleFilePreview = async (file: File) => {
+    try {
+      // If file doesn't have a URL, try to get a presigned URL for preview
+      let fileWithUrl = file;
+      if (!file.url) {
+        pushToast({
+          message: 'Loading file preview...',
+          type: 'info',
+        });
+
+        try {
+          const presignedData = await getPresignedDownloadUrl(file.id);
+          fileWithUrl = {
+            ...file,
+            url: presignedData.presignedUrl
+          };
+        } catch (error) {
+          console.warn('Could not get presigned URL for preview:', error);
+          pushToast({
+            message: 'Preview URL unavailable, showing file details',
+            type: 'warning',
+          });
+          // Continue with file without URL - preview will show "not available"
+        }
+      }
+
+      setPreviewFile(fileWithUrl);
+      setIsPreviewOpen(true);
+    } catch (error) {
+      console.error('Error opening file preview:', error);
+      pushToast({
+        message: 'Failed to open file preview',
+        type: 'error',
+      });
+    }
+  };
+
+  const closeFilePreview = () => {
+    setIsPreviewOpen(false);
+    setPreviewFile(null);
+  };
+
   const handleCreateFolder = async (name: string, parentId: string) => {
     try {
       // Call the createFolder API
@@ -377,7 +422,7 @@ export default function DocumentsPage() {
 
   const handleUploadFiles = async (files: FileList, folderId: string) => {
     const newFiles: File[] = Array.from(files).map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 9),
       name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
       type: 'file',
       size: file.size,
@@ -386,7 +431,7 @@ export default function DocumentsPage() {
       folderId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      url: URL.createObjectURL(file), // For demo purposes
+      url: URL.createObjectURL(file), // Create blob URL for preview
     }));
 
     let updatedFileSystem = fileSystem;
@@ -669,6 +714,7 @@ export default function DocumentsPage() {
                 <FolderView
                   folder={currentFolder}
                   onFolderClick={handleFolderClick}
+                  onFilePreview={handleFilePreview}
                   onFileDownload={handleDownloadFile}
                 />
               </div>
@@ -690,6 +736,14 @@ export default function DocumentsPage() {
         onClose={closeUploadDrawer}
         onUploadFiles={handleUploadFiles}
         currentFolder={currentFolder}
+      />
+
+      {/* File Preview Modal */}
+      <FilePreview
+        file={previewFile}
+        isOpen={isPreviewOpen}
+        onClose={closeFilePreview}
+        onDownload={handleDownloadFile}
       />
 
       {/* Toast Notifications */}

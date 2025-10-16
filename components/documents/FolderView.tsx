@@ -7,10 +7,11 @@ interface FolderViewProps {
   folder: Folder;
   onFolderClick: (folder: Folder) => void;
   onFileClick?: (file: File) => void;
+  onFilePreview?: (file: File) => void;
   onFileDownload?: (fileId: string, fileName: string) => void;
 }
 
-export default function FolderView({ folder, onFolderClick, onFileClick, onFileDownload }: FolderViewProps) {
+export default function FolderView({ folder, onFolderClick, onFileClick, onFilePreview, onFileDownload }: FolderViewProps) {
   // Extract folders and files from the current folder's children
   const folders = folder.children?.filter(child => child.type === 'folder') as Folder[] || [];
   const files = folder.children?.filter(child => child.type === 'file') as File[] || [];
@@ -47,7 +48,7 @@ export default function FolderView({ folder, onFolderClick, onFileClick, onFileD
   const getFolderItemCount = (folder: Folder): string => {
     const folderCount = folder.children?.filter(child => child.type === 'folder').length || 0;
     const fileCount = folder.children?.filter(child => child.type === 'file').length || 0;
-    
+
     if (folderCount === 0 && fileCount === 0) return 'Empty';
     if (folderCount > 0 && fileCount > 0) return `${folderCount} folder${folderCount > 1 ? 's' : ''}, ${fileCount} file${fileCount > 1 ? 's' : ''}`;
     if (folderCount > 0) return `${folderCount} folder${folderCount > 1 ? 's' : ''}`;
@@ -132,7 +133,7 @@ export default function FolderView({ folder, onFolderClick, onFileClick, onFileD
         <div
           key={file.id}
           className="flex items-center space-x-4 p-4 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer group"
-          onClick={() => onFileClick?.(file)}
+          onClick={() => onFilePreview?.(file)}
         >
           {/* File Icon */}
           <div className="flex-shrink-0">
@@ -206,7 +207,10 @@ export default function FolderView({ folder, onFolderClick, onFileClick, onFileD
             <button
               className="p-2 text-gray-400 hover:text-green-500 dark:hover:text-green-400 transition-colors rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20"
               title="Preview"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onFilePreview?.(file);
+              }}
             >
               <Eye className="w-4 h-4" />
             </button>
