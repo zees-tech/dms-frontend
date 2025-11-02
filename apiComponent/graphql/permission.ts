@@ -2,13 +2,6 @@ import {
   PermissionAssigneesQuery,
   PermissionAssigneesDocument,
   AssigneeInfoFilterInput,
-  AssignPermissionToFolderEntityInput,
-  CreateAccessMutation,
-  CreateAccessDocument,
-  RemoveFolderPermissionAssignmentInput,
-  RemoveAccessDocument,
-  AssignedPermissionQuery,
-  AssignedPermissionDocument,
   PermissionListDocument,
   PermissionListQuery,
 } from "./generated/graphql";
@@ -68,67 +61,67 @@ export const getPermissions = async (
   }
 };
 
-export const getAssignedPermissions = async (
-  assignedToId: string,
-  client: Axios.AxiosInstance | undefined = undefined
-): Promise<{ data: AssignedPermissionQuery | null; error: Error | null }> => {
-  try {
+// export const getAssignedPermissions = async (
+//   assignedToId: string,
+//   client: Axios.AxiosInstance | undefined = undefined
+// ): Promise<{ data: AssignedPermissionQuery | null; error: Error | null }> => {
+//   try {
     
-    if (!client) client = graphqlClient;
-    const response = await graphqlClient.post<{
-      data?: AssignedPermissionQuery;
-      errors?: Array<{ message: string }>;
-    }>("", {
-      query: print(AssignedPermissionDocument),
-      variables: { assignedToId },
-    });
-    return {
-      data: response.data?.data || null,
-      error: null,
-    };
-  } catch (err) {
-    return { data: null, error: err as Error };
-  }
-};
+//     if (!client) client = graphqlClient;
+//     const response = await graphqlClient.post<{
+//       data?: AssignedPermissionQuery;
+//       errors?: Array<{ message: string }>;
+//     }>("", {
+//       query: print(AssignedPermissionDocument),
+//       variables: { assignedToId },
+//     });
+//     return {
+//       data: response.data?.data || null,
+//       error: null,
+//     };
+//   } catch (err) {
+//     return { data: null, error: err as Error };
+//   }
+// };
 
-export const CreatePermissionAssignment = async (
-  input: AssignPermissionToFolderEntityInput,
-  client: Axios.AxiosInstance | undefined = undefined
-): Promise<{ data: CreateAccessMutation | null; error: Error | null }> => {
-  try {
-    if (!client) client = graphqlClient;
-    const response = await client.post<{
-      data?: CreateAccessMutation;
-      errors?: Array<{ message: string }>;
-    }>("", {
-      query: print(CreateAccessDocument),
-      variables: { AssignPermissionToFolderEntityInput: input },
-    });
-    return { data: response.data?.data || null, error: null };
-  } catch (err) {
-    return { data: null, error: err as Error };
-  }
-};
+// export const CreatePermissionAssignment = async (
+//   input: AssignPermissionToFolderEntityInput,
+//   client: Axios.AxiosInstance | undefined = undefined
+// ): Promise<{ data: CreateAccessMutation | null; error: Error | null }> => {
+//   try {
+//     if (!client) client = graphqlClient;
+//     const response = await client.post<{
+//       data?: CreateAccessMutation;
+//       errors?: Array<{ message: string }>;
+//     }>("", {
+//       query: print(CreateAccessDocument),
+//       variables: { AssignPermissionToFolderEntityInput: input },
+//     });
+//     return { data: response.data?.data || null, error: null };
+//   } catch (err) {
+//     return { data: null, error: err as Error };
+//   }
+// };
 
-export const RemovePermissionAssignment = async (
-  input: RemoveFolderPermissionAssignmentInput,
-  client: Axios.AxiosInstance | undefined = undefined
-): Promise<{ data: boolean | null; error: Error | null }> => {
-  try {
-    if (!client) client = graphqlClient;
-    const response = await client.post<{
-      data?: { removeFolderPermissionAssignmentByEntity: boolean };
-      errors?: Array<{ message: string }>;
-    }>("", {
-      query: print(RemoveAccessDocument),
-      variables: { RemoveFolderPermissionAssignmentInput: input },
-    });
-    return {
-      data:
-        response.data?.data?.removeFolderPermissionAssignmentByEntity || null,
-      error: null,
-    };
-  } catch (err) {
-    return { data: null, error: err as Error };
-  }
-};
+// export const RemovePermissionAssignment = async (
+//   input: RemoveFolderPermissionAssignmentInput,
+//   client: Axios.AxiosInstance | undefined = undefined
+// ): Promise<{ data: boolean | null; error: Error | null }> => {
+//   try {
+//     if (!client) client = graphqlClient;
+//     const response = await client.post<{
+//       data?: { removeFolderPermissionAssignmentByEntity: boolean };
+//       errors?: Array<{ message: string }>;
+//     }>("", {
+//       query: print(RemoveAccessDocument),
+//       variables: { RemoveFolderPermissionAssignmentInput: input },
+//     });
+//     return {
+//       data:
+//         response.data?.data?.removeFolderPermissionAssignmentByEntity || null,
+//       error: null,
+//     };
+//   } catch (err) {
+//     return { data: null, error: err as Error };
+//   }
+// };

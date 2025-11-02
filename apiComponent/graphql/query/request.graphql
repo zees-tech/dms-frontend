@@ -1,0 +1,75 @@
+query GetPendingRequests(
+  $skip: Int
+  $take: Int
+  $where: RequestFilterInput
+  $order: [RequestSortInput!]
+) {
+  pendingRequests(skip: $skip, take: $take, where: $where, order: $order) {
+    items {
+      id
+      fileId
+      file {
+        pathName
+        name
+        parentId
+        contentUrl
+        description
+        size
+        mimeType
+        expiry
+        id
+      }
+      user {
+        id
+        name
+        email
+        roleId
+        departmentId
+        managerId
+      }
+      userId
+      status
+      description
+      expiryDate
+      submittedAt
+      completedAt
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
+  }
+}
+
+
+query GetRequestFlow($where: WorkflowFilterInput, $order: [WorkflowSortInput!] )
+{
+  workflows(where: $where, order: $order) {
+    id
+    name
+    description
+    isSequential
+    requiredApprovals
+    timeoutHours
+    allowDelegation
+    steps {
+      id
+      stepNumber
+      stepName
+      description
+      status
+      assignedToId
+      isRequired
+      canDelegate
+      timeoutHours
+      conditionExpression
+      completionActionConfig
+      rejectionActionConfig
+    }
+    completionActionConfig
+    rejectionActionConfig
+    changesRequestedActionConfig
+    cancelActionConfig
+  }
+}

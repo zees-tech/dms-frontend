@@ -1,0 +1,41 @@
+mutation ProcessRequest(
+  $requestId: UUID!
+  $action: RequestStepStatus!
+  $comments: String
+  $reason: String
+) {
+  processRequest(
+    requestId: $requestId
+    action: $action
+    comments: $comments
+    reason: $reason
+  ) {
+    id
+    fileId
+    userId
+    status
+    description
+    expiryDate
+    submittedAt
+    completedAt
+    steps {
+      id
+      requestId
+      stepNumber
+      status
+      assignedToId
+      isRequired
+      timeoutHours
+      canDelegate
+      delegatedToId
+      startedAt
+      completedAt
+      expiredAt
+      sequence
+      comments
+      action
+      actionAt
+      actionComments
+    }
+  }
+}

@@ -9,6 +9,7 @@ import { graphqlClient } from "../../utils/client";
 import { print } from "graphql";
 
 export const getFiles = async (
+  folderId : string,
   client: Axios.AxiosInstance | undefined = undefined
 ): Promise<{
   data: GetFilesQuery | null;
@@ -21,13 +22,14 @@ export const getFiles = async (
       errors?: Array<{ message: string }>;
     }>("", {
       query: print(GetFilesDocument),
+      variables: { folderId },
     });
     return { data: response.data?.data || null, error: null };
   } catch (err) {
     return { data: null, error: err as Error };
   }
 };
-console.log("body", CreateFileDocument.definitions);
+
 export const createFile = async (
   input: CreateFileInput,
   client: Axios.AxiosInstance | undefined = undefined

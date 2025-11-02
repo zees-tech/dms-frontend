@@ -1,17 +1,24 @@
 # Get all files (with filtering, sorting, and projection)
-query GetFiles {
-  files {
-    id
-    name
-    description
-    size
-    mimeType
-    parentId
-    createdById
-    createdAt
-    updatedAt
-    expiry
-    currentVersion
+query GetFiles($skip: Int, $take: Int, $folderId: UUID!) {
+  files(skip: $skip, take: $take, folderId: $folderId) {
+    items {
+      id
+      name
+      description
+      size
+      mimeType
+      parentId
+      createdById
+      createdAt
+      updatedAt
+      expiry
+      currentVersion
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
   }
 }
 

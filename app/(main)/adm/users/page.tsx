@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import { Modal, Form, Button, Row, Col, message } from "antd";
 import { getPermissionsAssigneeList } from "@/apiComponent/graphql/permission";
-import { AssigneeInfo as GraphQLAssigneeInfo, AssignmentType } from "@/apiComponent/graphql/generated/graphql";
+import { AssigneeInfo as GraphQLAssigneeInfo, Role as GraphQLRole } from "@/apiComponent/graphql/generated/graphql";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import UsersTable from "./ui/UsersTable";
-import AccessControlTab from "./ui/AccessControlTab";
+// import AccessControlTab from "./ui/AccessControlTab";
 import DepartmentsTable from "./ui/DepartmentsTable";
 import UserForm from "./ui/UserForm";
 import RoleForm from "./ui/RoleForm";
@@ -28,38 +28,26 @@ interface Department {
   name: string;
 }
 
+// Simplified Role interface matching the API response
+interface Role {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("users");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form] = Form.useForm();
 
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      role: "Admin",
-      department: "Engineering",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane@example.com",
-      role: "User",
-      department: "Marketing",
-      status: "Active",
-    },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
 
-  const [assignees, setAssignees] = useState<GraphQLAssigneeInfo[]>([]);
+  // const [assignees, setAssignees] = useState<GraphQLAssigneeInfo[]>([]);
 
-  const [departments, setDepartments] = useState<Department[]>([
-    { id: 1, name: "Engineering" },
-    { id: 2, name: "Marketing" },
-    { id: 3, name: "Sales" },
-  ]);
+  const [roles, setRoles] = useState<Role[]>([]);
+
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   // Fetch assignees from API
   useEffect(() => {
@@ -72,7 +60,7 @@ export default function UsersPage() {
           return;
         }
         if (data?.permissionAssignees) {
-          setAssignees(data.permissionAssignees);
+          // setAssignees(data.permissionAssignees);
         }
       } catch (err) {
         console.error('Error fetching assignees:', err);
@@ -191,27 +179,27 @@ export default function UsersPage() {
     }
   };
 
-  const handleDeleteRole = (id: number) => {
-    setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
-    message.success('Role deleted successfully');
-  };
+  // const handleDeleteRole = (id: number) => {
+  //   setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
+  //   message.success('Role deleted successfully');
+  // };
 
-  const handleDeleteUserGroup = (id: number) => {
-    setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
-    message.success('User Group deleted successfully');
-  };
+  // const handleDeleteUserGroup = (id: number) => {
+  //   setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
+  //   message.success('User Group deleted successfully');
+  // };
 
   const renderFormContent = () => {
     switch (activeTab) {
       case "users":
-        return <UserForm form={form} roles={assignees.filter(a => a.type === AssignmentType.Role)} departments={departments} />;
-      case "access-control":
-        const type = form.getFieldValue("type");
-        if (type === "user-group") {
-          return <UserGroupForm form={form} users={users} editingId={editingId} />;
-        } else {
-          return <RoleForm form={form} editingId={editingId} />;
-        }
+        return <UserForm form={form} roles={roles} departments={departments} />;
+      // case "access-control":
+      //   const type = form.getFieldValue("type");
+      //   if (type === "user-group") {
+      //     return <UserGroupForm form={form} users={users} editingId={editingId} />;
+      //   } else {
+      //     return <RoleForm form={form} editingId={editingId} />;
+      //   }
       case "departments":
         return <DepartmentForm form={form} />;
       default:
@@ -246,12 +234,12 @@ export default function UsersPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               {activeTab === "users"
                 ? "Users"
-                : activeTab === "access-control"
-                  ? "Access Control"
+                // : activeTab === "access-control"
+                //   ? "Access Control"
                   : "Departments"}
             </h1>
             <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
-              {["users", "access-control", "departments"].map((tab) => (
+              {["users", "departments"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -260,7 +248,7 @@ export default function UsersPage() {
                     : "text-gray-500 hover:text-gray-800 dark:hover:text-white"
                     }`}
                 >
-                  {tab === "access-control" ? "Access Control" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
@@ -285,7 +273,7 @@ export default function UsersPage() {
             onDelete={handleDelete}
           />
         )}
-        {activeTab === "access-control" && (
+        {/* {activeTab === "access-control" && (
           <AccessControlTab
             assignees={assignees}
             onEditRole={openModal}
@@ -293,7 +281,7 @@ export default function UsersPage() {
             onEditUserGroup={openModal}
             onDeleteUserGroup={handleDeleteUserGroup}
           />
-        )}
+        )} */}
         {activeTab === "departments" && (
           <DepartmentsTable
             departments={departments}
