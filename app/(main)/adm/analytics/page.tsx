@@ -1,9 +1,8 @@
-import DashboardLayout from '@/components/layout/DashboardLayout';
+'use client';
 import { Eye, User, BarChart3, Clock } from 'lucide-react';
 
 export default function AnalyticsPage() {
     return (
-        <DashboardLayout>
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -121,6 +120,5 @@ export default function AnalyticsPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
     );
 }

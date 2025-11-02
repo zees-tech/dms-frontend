@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal, Form, Button, Row, Col, message } from "antd";
-import { getPermissionsAssigneeList } from "@/apiComponent/graphql/permission";
-import { AssigneeInfo as GraphQLAssigneeInfo, AssignmentType } from "@/apiComponent/graphql/generated/graphql";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { GetDepartments } from "@/apiComponent/graphql/department";
+import { CreateDepartment } from "@/apiComponent/graphql/department";
+import { AssigneeInfo as GraphQLAssigneeInfo, Role as GraphQLRole } from "@/apiComponent/graphql/generated/graphql";
 import UsersTable from "./ui/UsersTable";
-import AccessControlTab from "./ui/AccessControlTab";
+// import AccessControlTab from "./ui/AccessControlTab";
 import DepartmentsTable from "./ui/DepartmentsTable";
 import UserForm from "./ui/UserForm";
-import RoleForm from "./ui/RoleForm";
-import UserGroupForm from "./ui/UserGroupForm";
 import DepartmentForm from "./ui/DepartmentForm";
+import { GetUsers } from "@/apiComponent/graphql/user";
+import { getClientRoles } from "@/apiComponent/graphql/role";
 
 // Type definitions
 interface User {
@@ -26,6 +26,14 @@ interface User {
 interface Department {
   id: number;
   name: string;
+  description: string;
+}
+
+// Simplified Role interface matching the API response
+interface Role {
+  id: string;
+  name: string;
+  description: string;
 }
 
 export default function UsersPage() {
@@ -34,54 +42,111 @@ export default function UsersPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form] = Form.useForm();
 
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      role: "Admin",
-      department: "Engineering",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane@example.com",
-      role: "User",
-      department: "Marketing",
-      status: "Active",
-    },
-  ]);
+  // const [assignees, setAssignees] = useState<GraphQLAssigneeInfo[]>([]);
 
-  const [assignees, setAssignees] = useState<GraphQLAssigneeInfo[]>([]);
+  const [skip, setSkip] = useState(0);
+  const [take, setTake] = useState(10);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const [departments, setDepartments] = useState<Department[]>([
-    { id: 1, name: "Engineering" },
-    { id: 2, name: "Marketing" },
-    { id: 3, name: "Sales" },
-  ]);
 
-  // Fetch assignees from API
-  useEffect(() => {
-    const fetchAssignees = async () => {
-      try {
-        const { data, error } = await getPermissionsAssigneeList();
-        if (error) {
-          console.error('Error fetching assignees:', error);
-          message.error('Failed to load assignees');
-          return;
-        }
-        if (data?.permissionAssignees) {
-          setAssignees(data.permissionAssignees);
-        }
-      } catch (err) {
-        console.error('Error fetching assignees:', err);
-        message.error('Failed to load assignees');
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  const fetchDepartment = useCallback(async () => {
+    try {
+
+      const { data, error } = await GetDepartments(skip, take);
+
+      if (error) {
+        console.error('Error fetching departments:', error);
+        message.error('Failed to load departments');
+        return;
       }
-    };
+      if (data?.departments?.items) {
+        const depts = data.departments.items.map(dept => ({
+          id: dept.id, // Convert UUID to number for local state
+          name: dept.name,
+          description: dept.description || '',
+        }));
+        setDepartments(depts);
 
-    fetchAssignees();
+        setHasMore(data.departments.pageInfo?.hasNextPage || false);
+        setTotalCount(data.departments.totalCount || 0);
+      }
+
+
+    } catch (err) {
+      console.error('Error fetching assignees:', err);
+      message.error('Failed to load assignees');
+    }
+  }, [skip, take]);
+  const fetchRoles = useCallback(async () => {
+    try {
+
+      const { data, error } = await getClientRoles();
+
+      if (error) {
+        console.error('Error fetching roles:', error);
+        message.error('Failed to load roles');
+        return;
+      }
+
+      if (data?.roles) {
+        const rolesData = data.roles.map(role => ({
+          id: role.id,
+          name: role.name,
+          description: role.description || '',
+        }));
+        setRoles(rolesData);
+      }
+
+    } catch (err) {
+      console.error('Error fetching roles:', err);
+      message.error('Failed to load roles');
+    }
   }, []);
+  const fetchUsers = useCallback(async () => {
+    try {
+
+      const { data, error } = await GetUsers(skip, take);
+
+      if (error) {
+        console.error('Error fetching departments:', error);
+        message.error('Failed to load departments');
+        return;
+      }
+      if (data?.users?.items) {
+        const depts = data.users.items.map(dept => ({
+          id: dept.id,
+          name: dept.name,
+          email: dept.email,
+          role: dept.role?.name || 'N/A',
+          department: dept.department?.name || 'N/A',
+          status: dept.status,
+        }));
+        setUsers(depts);
+
+        setHasMore(data.users.pageInfo?.hasNextPage || false);
+        setTotalCount(data.users.totalCount || 0);
+      }
+
+
+    } catch (err) {
+      console.error('Error fetching assignees:', err);
+      message.error('Failed to load assignees');
+    }
+  }, [skip, take]);
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      await fetchDepartment();
+      await fetchRoles();
+      await fetchUsers();
+    };
+    fetchAllData();
+  }, [fetchDepartment, fetchUsers, fetchRoles]);
 
   const openModal = (item: User | Department | GraphQLAssigneeInfo | null = null) => {
     if (item) {
@@ -169,11 +234,29 @@ export default function UsersPage() {
           );
           message.success('Department updated successfully');
         } else {
-          setDepartments([
-            ...departments,
-            { id: Date.now(), name: values.name },
-          ]);
-          message.success('Department created successfully');
+          // Call API to create department
+          const { data, error } = await CreateDepartment({
+            name: values.name,
+            description: values.description,
+            code: values.code || undefined,
+            parentDepartmentId: values.parentDepartmentId || undefined,
+          });
+
+          if (error) {
+            console.error('Error creating department:', error);
+            message.error('Failed to create department');
+            return;
+          }
+
+          if (data?.createDepartment) {
+            const newDepartment = {
+              id: data.createDepartment.id, // Convert UUID to number for local state
+              name: data.createDepartment.name,
+              description: data.createDepartment.description || '',
+            };
+            setDepartments([...departments, newDepartment]);
+            message.success('Department created successfully');
+          }
         }
       }
 
@@ -191,29 +274,22 @@ export default function UsersPage() {
     }
   };
 
-  const handleDeleteRole = (id: number) => {
-    setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
-    message.success('Role deleted successfully');
-  };
+  // const handleDeleteRole = (id: number) => {
+  //   setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
+  //   message.success('Role deleted successfully');
+  // };
 
-  const handleDeleteUserGroup = (id: number) => {
-    setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
-    message.success('User Group deleted successfully');
-  };
+  // const handleDeleteUserGroup = (id: number) => {
+  //   setAssignees(assignees.filter((assignee) => assignee.id !== id.toString()));
+  //   message.success('User Group deleted successfully');
+  // };
 
   const renderFormContent = () => {
     switch (activeTab) {
       case "users":
-        return <UserForm form={form} roles={assignees.filter(a => a.type === AssignmentType.Role)} departments={departments} />;
-      case "access-control":
-        const type = form.getFieldValue("type");
-        if (type === "user-group") {
-          return <UserGroupForm form={form} users={users} editingId={editingId} />;
-        } else {
-          return <RoleForm form={form} editingId={editingId} />;
-        }
+        return <UserForm form={form} roles={roles} departments={departments} />;
       case "departments":
-        return <DepartmentForm form={form} />;
+        return <DepartmentForm form={form} departments={departments} />;
       default:
         return null;
     }
@@ -221,7 +297,7 @@ export default function UsersPage() {
 
   const getModalTitle = () => {
     const baseTitle = `${editingId ? "Edit" : "Add"} `;
-    
+
     if (activeTab === "users") {
       return baseTitle + "User";
     } else if (activeTab === "access-control") {
@@ -239,53 +315,52 @@ export default function UsersPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {activeTab === "users"
-                ? "Users"
-                : activeTab === "access-control"
-                  ? "Access Control"
-                  : "Departments"}
-            </h1>
-            <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
-              {["users", "access-control", "departments"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-2 text-sm font-medium ${activeTab === tab
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-500 hover:text-gray-800 dark:hover:text-white"
-                    }`}
-                >
-                  {tab === "access-control" ? "Access Control" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            {activeTab === "users"
+              ? "Users"
+              // : activeTab === "access-control"
+              //   ? "Access Control"
+              : "Departments"}
+          </h1>
+          <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
+            {["users", "departments"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-2 text-sm font-medium ${activeTab === tab
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                  }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
           </div>
-          {activeTab !== "access-control" && (
-            <button
-              onClick={() => openModal()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Add{" "}
-              {activeTab === "users"
-                ? "User"
-                : "Department"}
-            </button>
-          )}
         </div>
-
-        {activeTab === "users" && (
-          <UsersTable
-            users={users}
-            onEdit={openModal}
-            onDelete={handleDelete}
-          />
+        {activeTab !== "access-control" && (
+          <button
+            onClick={() => openModal()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Add{" "}
+            {activeTab === "users"
+              ? "User"
+              : "Department"}
+          </button>
         )}
-        {activeTab === "access-control" && (
+      </div>
+
+      {activeTab === "users" && (
+        <UsersTable
+          users={users}
+          onEdit={openModal}
+          onDelete={handleDelete}
+        />
+      )}
+      {/* {activeTab === "access-control" && (
           <AccessControlTab
             assignees={assignees}
             onEditRole={openModal}
@@ -293,44 +368,43 @@ export default function UsersPage() {
             onEditUserGroup={openModal}
             onDeleteUserGroup={handleDeleteUserGroup}
           />
-        )}
-        {activeTab === "departments" && (
-          <DepartmentsTable
-            departments={departments}
-            onEdit={openModal}
-            onDelete={handleDelete}
-          />
-        )}
+        )} */}
+      {activeTab === "departments" && (
+        <DepartmentsTable
+          departments={departments}
+          onEdit={openModal}
+          onDelete={handleDelete}
+        />
+      )}
 
-        <Modal
-          title={getModalTitle()}
-          open={isModalOpen}
-          onCancel={closeModal}
-          footer={null}
-          width={getModalWidth()}
+      <Modal
+        title={getModalTitle()}
+        open={isModalOpen}
+        onCancel={closeModal}
+        footer={null}
+        width={getModalWidth()}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-          >
-            {renderFormContent()}
+          {renderFormContent()}
 
-            <Row gutter={16} style={{ marginTop: 16 }}>
-              <Col span={12}>
-                <Button type="primary" htmlType="submit" block>
-                  {editingId ? "Update" : "Save"}
-                </Button>
-              </Col>
-              <Col span={12}>
-                <Button onClick={closeModal} block>
-                  Cancel
-                </Button>
-              </Col>
-            </Row>
-          </Form>
-        </Modal>
-      </div>
-    </DashboardLayout>
+          <Row gutter={16} style={{ marginTop: 16 }}>
+            <Col span={12}>
+              <Button type="primary" htmlType="submit" block>
+                {editingId ? "Update" : "Save"}
+              </Button>
+            </Col>
+            <Col span={12}>
+              <Button onClick={closeModal} block>
+                Cancel
+              </Button>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+    </div>
   );
 }

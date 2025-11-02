@@ -1,29 +1,52 @@
-query PermissionAssignees($AssigneeInfoFilterInput: AssigneeInfoFilterInput){
- permissionAssignees(where: $AssigneeInfoFilterInput){
-  id,
-  name
-  type
-  description
- }
-}
-
-query AssignedPermission($assignedToId: UUID!){
-   folderPermissionAssignmentsByAssignedToId(assignedToId: $assignedToId){
-    id    
-    folderPermission{
-        folderId
-        permissionId
+query PermissionAssignees(
+  $skip: Int
+  $take: Int
+  $where: AssigneeInfoFilterInput
+) {
+  permissionAssignees(skip: $skip, take: $take, where: $where) {
+    items {
+      id
+      name
+      type
+      description
     }
-    assignedToId
-    assignmentType
-   }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
+  }
 }
 
-query PermissionList {
-  permissions {
-    id
-    name
-    _For
-    allowed
+# query AssignedPermission($assignedToId: UUID!){
+#    folderPermissionAssignmentsByAssignedToId(assignedToId: $assignedToId){
+#     id
+#     folderPermission{
+#         folderId
+#         permissionId
+#     }
+#     assignedToId
+#     assignmentType
+#    }
+# }
+
+query PermissionList(
+  $skip: Int
+  $take: Int
+  $where: PermissionFilterInput
+  $order: [PermissionSortInput!]
+) {
+  permissions(skip: $skip, take: $take, where: $where, order: $order) {
+    items {
+      id
+      name
+      _For
+      allowed
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
   }
 }

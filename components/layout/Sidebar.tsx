@@ -7,7 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { colorSchemes } from '@/lib/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { getRolePrefix } from '@/utils/role-route';
-import { BarChart3, FileText, TrendingUp, Users, Package, Settings, Menu, HelpCircle, LucideIcon } from 'lucide-react';
+import { BarChart3, FileText, TrendingUp, Users, Package, Settings, Menu, HelpCircle, LucideIcon, Workflow, Inbox, Send } from 'lucide-react';
 
 interface MenuItem {
     name: string;
@@ -21,6 +21,8 @@ const menuItems: MenuItem[] = [
     { name: 'Documents', href: '/documents', icon: FileText },
     // { name: 'Analytics', href: '/analytics', icon: TrendingUp },
     { name: 'Users', href: '/users', icon: Users },
+    { name: 'Requests', href: '/requests/sets', icon: Package },
+    { name: 'Request Flow', href: '/requestflow', icon: Workflow },
     { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -40,15 +42,15 @@ export default function Sidebar() {
     const roleBasedMenuItems = menuItems.filter((item) => {
         if (userRole === 'sysadmin') {
             // System admin can access everything
-            return item.name === 'System Settings';
+            return true;
         }
         if (userRole === 'admin') {
-            // Admin can access all except system admin features
-            return item.name !== 'System Settings';
+            // Admin can access all features
+            return true;
         }
         if (userRole === 'user') {
-            // User can access basic features, no settings
-            return item.name !== 'Settings' && item.name !== 'Users' && item.name !== 'Analytics' && item.name !== 'Dashboard';
+            // User can access basic features, no admin settings
+            return item.name !== 'Settings' && item.name !== 'Users';
         }
         return false;
     });

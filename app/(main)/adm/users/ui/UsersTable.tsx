@@ -44,9 +44,9 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Actions
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
@@ -80,7 +80,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === "Active"
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${user.status === "APPROVED"
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
                       }`}
@@ -88,7 +88,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
                     {user.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => onEdit(user)}
                     className="text-blue-600 hover:text-blue-900 mr-3"
@@ -101,7 +101,7 @@ export default function UsersTable({ users, onEdit, onDelete }: UsersTableProps)
                   >
                     Delete
                   </button>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>

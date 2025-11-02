@@ -1,7 +1,6 @@
 "use client";
 
 import { Form, Input, Select, Row, Col, FormInstance } from "antd";
-import { AssigneeInfo as GraphQLAssigneeInfo } from "../../../../../apiComponent/graphql/generated/graphql";
 
 interface User {
   id: number;
@@ -24,9 +23,15 @@ interface Department {
   name: string;
 }
 
+interface Role {
+  id: string;
+  name: string;
+  description: string;
+}
+
 interface UserFormProps {
   form: FormInstance;
-  roles: GraphQLAssigneeInfo[];
+  roles: Role[];
   departments: Department[];
 }
 

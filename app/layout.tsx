@@ -3,6 +3,7 @@ import { Inter, Roboto, Poppins } from 'next/font/google';
 import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -38,19 +39,21 @@ export default function RootLayout({
       <body className={`${inter.variable} ${roboto.variable} ${poppins.variable} font-inter antialiased`}>
         <ThemeProvider>
           <AuthProvider>
-            {children}
-            <ToastContainer
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-            />
+            <NotificationProvider>
+              {children}
+              <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+              />
+            </NotificationProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -45,29 +45,22 @@ export default function DocumentsPage() {
   // Check if user role is 'user' to hide Add Folder and Upload buttons
   const isUserRole = storedResponse?.user?.role === 'user';
 
-  // Fetch folders and files data
+  // Fetch folders data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        // Fetch folders
+        // Fetch folders only - files will be fetched when folders are selected
         const foldersResult = await getFolders();
         if (foldersResult.error) {
           throw new Error(foldersResult.error.message);
         }
 
-        // Fetch files
-        const filesResult = await getFiles();
-        if (filesResult.error) {
-          throw new Error(filesResult.error.message);
-        }
-
         // Transform API data to match our file system structure
-        const apiFolders = foldersResult.data?.folders || [];
-        const apiFiles = filesResult.data?.files || [];
+        const apiFolders = foldersResult.data?.folders?.items || [];
 
-        // Build the folder tree structure
+        // Build the folder tree structure without files initially
         const buildFolderTree = (folders: typeof apiFolders): Folder => {
           const rootFolder = createRootFolder();
 
@@ -102,30 +95,6 @@ export default function DocumentsPage() {
             }
           });
 
-          // Add files to their respective folders
-          apiFiles.forEach(file => {
-            const parentId = file.parentId || 'root';
-            const parent = folderMap.get(parentId);
-
-            if (parent) {
-              const fileNode: File = {
-                id: file.id,
-                name: file.name,
-                type: 'file',
-                size: file.size || 0,
-                mimeType: file.mimeType || 'application/octet-stream',
-                extension: file.name.split('.').pop() || '',
-                folderId: parentId,
-                createdAt: file.createdAt,
-                updatedAt: file.updatedAt,
-                url: '', // Will be generated when needed
-              };
-
-              if (!parent.children) parent.children = [];
-              parent.children.push(fileNode);
-            }
-          });
-
           return rootFolder;
         };
 
@@ -148,29 +117,129 @@ export default function DocumentsPage() {
     fetchData();
   }, [pushToast]);
 
-  const handleFolderClick = (folder: Folder) => {
-    setCurrentFolder(folder);
-    // Update breadcrumb - find the path to this folder
-    const newBreadcrumb: Folder[] = [];
-    let current: Folder | null = folder;
+  const handleFolderClick = async (folder: Folder) => {
+    try {
+      setLoading(true);
+      
+      // Only fetch files if this is a real folder (not the root)
+      if (folder.id !== 'root') {
+        const filesResult = await getFiles(folder.id);
+        if (filesResult.error) {
+          throw new Error(filesResult.error.message);
+        }
 
-    while (current) {
-      newBreadcrumb.unshift(current);
-      // Find parent in the file system
-      if (current.parentId) {
-        current = findFolderById(fileSystem, current.parentId);
+        const apiFiles = filesResult.data?.files?.items || [];
+
+        // Update the folder with files
+        const updatedFolder: Folder = {
+          ...folder,
+          children: [
+            ...(folder.children || []).filter(child => child.type === 'folder'),
+            ...apiFiles.map(file => ({
+              id: file.id,
+              name: file.name,
+              type: 'file' as const,
+              size: file.size || 0,
+              mimeType: file.mimeType || 'application/octet-stream',
+              extension: file.name.split('.').pop() || '',
+              folderId: folder.id,
+              createdAt: file.createdAt,
+              updatedAt: file.updatedAt,
+              url: '', // Will be generated when needed
+            }))
+          ]
+        };
+
+        // Update the file system with the folder containing files
+        const updatedFileSystem = updateFolder(fileSystem, updatedFolder);
+        setFileSystem(updatedFileSystem);
+        setCurrentFolder(updatedFolder);
       } else {
-        current = null;
+        // For root folder, just set it without files
+        setCurrentFolder(folder);
       }
-    }
 
-    setBreadcrumb(newBreadcrumb);
+      // Update breadcrumb - find the path to this folder
+      const newBreadcrumb: Folder[] = [];
+      let current: Folder | null = folder;
+
+      while (current) {
+        newBreadcrumb.unshift(current);
+        // Find parent in the file system
+        if (current.parentId) {
+          current = findFolderById(fileSystem, current.parentId);
+        } else {
+          current = null;
+        }
+      }
+
+      setBreadcrumb(newBreadcrumb);
+
+    } catch (error) {
+      console.error('Error fetching folder files:', error);
+      pushToast({
+        message: 'Failed to load folder contents',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleBreadcrumbClick = (folder: Folder) => {
-    setCurrentFolder(folder);
-    const folderIndex = breadcrumb.findIndex((f) => f.id === folder.id);
-    setBreadcrumb(breadcrumb.slice(0, folderIndex + 1));
+  const handleBreadcrumbClick = async (folder: Folder) => {
+    try {
+      setLoading(true);
+      
+      // Only fetch files if this is a real folder (not the root)
+      if (folder.id !== 'root') {
+        const filesResult = await getFiles(folder.id);
+        if (filesResult.error) {
+          throw new Error(filesResult.error.message);
+        }
+
+        const apiFiles = filesResult.data?.files?.items || [];
+
+        // Update the folder with files
+        const updatedFolder: Folder = {
+          ...folder,
+          children: [
+            ...(folder.children || []).filter(child => child.type === 'folder'),
+            ...apiFiles.map(file => ({
+              id: file.id,
+              name: file.name,
+              type: 'file' as const,
+              size: file.size || 0,
+              mimeType: file.mimeType || 'application/octet-stream',
+              extension: file.name.split('.').pop() || '',
+              folderId: folder.id,
+              createdAt: file.createdAt,
+              updatedAt: file.updatedAt,
+              url: '', // Will be generated when needed
+            }))
+          ]
+        };
+
+        // Update the file system with the folder containing files
+        const updatedFileSystem = updateFolder(fileSystem, updatedFolder);
+        setFileSystem(updatedFileSystem);
+        setCurrentFolder(updatedFolder);
+      } else {
+        // For root folder, just set it without files
+        setCurrentFolder(folder);
+      }
+
+      const folderIndex = breadcrumb.findIndex((f) => f.id === folder.id);
+      setBreadcrumb(breadcrumb.slice(0, folderIndex + 1));
+
+    } catch (error) {
+      console.error('Error fetching folder files:', error);
+      pushToast({
+        message: 'Failed to load folder contents',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const findFolderById = (root: Folder, id: string): Folder | null => {
@@ -492,7 +561,7 @@ export default function DocumentsPage() {
   const files = currentFolder.children?.filter(item => item.type === 'file') as File[] || [];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         {/* <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -654,6 +723,6 @@ export default function DocumentsPage() {
 
       {/* Toast Notifications */}
       <ToastContainer />
-    </DashboardLayout>
+    </>
   );
 }

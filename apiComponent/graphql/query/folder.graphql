@@ -1,13 +1,20 @@
 # Get folders (with optional parentId, filtering, sorting, and projection)
-query GetFolders($parentId: UUID) {
-  folders(parentId: $parentId) {
-    id
-    name
-    description
-    parentId
-    createdById
-    createdAt
-    updatedAt
+query GetFolders($skip: Int, $take: Int, $parentId: UUID) {
+  folders(skip: $skip, take: $take, parentId: $parentId) {
+    items {
+      id
+      name
+      description
+      parentId
+      createdById
+      createdAt
+      updatedAt
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
   }
 }
 

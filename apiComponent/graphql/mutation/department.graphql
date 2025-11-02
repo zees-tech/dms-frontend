@@ -1,0 +1,15 @@
+mutation CreateDepartment($input:  CreateDepartmentInput!) {
+  createDepartment(input: $input) {
+    id
+    name
+    description
+    code
+    parentDepartmentId
+    isActive
+    isDeleted
+    deletedAt
+    createdAt
+    updatedAt
+    createdById
+  }
+}

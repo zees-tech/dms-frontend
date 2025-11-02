@@ -1,0 +1,32 @@
+query GetUsers(
+  $skip: Int
+  $take: Int
+  $where: UserFilterInput
+  $order: [UserSortInput!]
+) {
+  users(skip: $skip, take: $take, where: $where, order: $order) {
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    items {
+      id
+      name
+      email
+      isEmailVerified
+      role {
+        id
+        name
+      }
+      department {
+        id
+        name
+      }
+      status
+      isActive
+      createdAt
+      updatedAt
+    }
+    totalCount
+  }
+}

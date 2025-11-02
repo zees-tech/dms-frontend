@@ -1,0 +1,27 @@
+query GetMyNotifications(
+  $skip: Int
+  $take: Int
+  $where: NotificationFilterInput
+) {
+  myNotifications(skip: $skip, take: $take, where: $where) {
+    items {
+      id
+      title
+      message
+      type
+      relatedEntityId
+      relatedEntityType
+      status
+      priority
+      actionUrl
+      expiresAt
+      readAt
+      metadata
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
+  }
+}

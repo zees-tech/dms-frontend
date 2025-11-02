@@ -18,7 +18,6 @@ import {
     ArrowLeft,
     Home
 } from 'lucide-react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 
 type ColorType = 'blue' | 'red' | 'yellow' | 'green' | 'gray' | 'purple' | 'pink' | 'indigo' | 'teal';
 type StatusType = 'active' | 'expired' | 'expiring';
@@ -250,7 +249,6 @@ export default function DocumentManagementDashboard() {
     };
 
     return (
-        <DashboardLayout>
             <div className="mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -443,6 +441,5 @@ export default function DocumentManagementDashboard() {
                     )}
                 </div>
             </div>
-        </DashboardLayout>
     );
 }
