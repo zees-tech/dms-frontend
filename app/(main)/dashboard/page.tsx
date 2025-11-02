@@ -1,10 +1,7 @@
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useTheme } from '@/contexts/ThemeContext';
 import { Users, DollarSign, Package, TrendingUp, Plus, BarChart3, Settings, MessageCircle } from 'lucide-react';
 
 export default function DashboardPage() {
     return (
-        <DashboardLayout>
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -112,6 +109,5 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
-        </DashboardLayout>
     );
 }

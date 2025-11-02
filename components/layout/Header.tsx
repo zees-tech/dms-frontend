@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { colorSchemes } from '@/lib/theme';
 import NotificationBell from '@/components/ui/NotificationBell';
+import { useNotifications } from '@/contexts/NotificationContext';
+import { GetNotifications } from '@/apiComponent/graphql/notification';
 
 export default function Header() {
     const { user, logout } = useAuth();
@@ -12,6 +14,27 @@ export default function Header() {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const colors = colorSchemes[colorScheme];
+
+    const { addNotification } = useNotifications();
+
+    const fetchNotifications = useCallback(async () => {
+        const { data, error } = await GetNotifications(0, 10, null);
+        if (error) {
+            console.error('Error fetching notifications:', error);
+        }
+        if (data && data.myNotifications) {
+            data.myNotifications.items?.map((notif) => {
+                addNotification({
+                    message: notif.message,
+                    type: notif.type as 'info' | 'success' | 'warning' | 'error',
+                });
+            });
+        }
+    },[]);
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [fetchNotifications]);
 
     return (
         <header className={`sticky top-0 z-50 border-b ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>

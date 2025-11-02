@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const { fileKey, originalFileName, fileSize, contentType, folderId } = body;
+    const { fileKey, originalFileName, fileSize, contentType, folderId, documentSettings } = body;
 
     // Validate required fields
     if (!fileKey) {
@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       contentUrl: publicUrl,
       parentId: folderId,
       size: fileSize,
+      expiry: documentSettings?.expiry ? new Date(documentSettings?.expiry) : null,
       mimeType: contentType || "application/octet-stream",
     };
     const client = await createServerClient("graphql", token, refresh_token, "/api");

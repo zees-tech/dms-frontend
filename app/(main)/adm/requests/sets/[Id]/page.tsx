@@ -1,0 +1,270 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useToast } from '@/hooks/useToast';
+import { ArrowLeft, Edit, FileText } from 'lucide-react';
+import Link from 'next/link';
+import RequestDetailView from '@/components/request/RequestDetailView';
+
+interface Request {
+  id: string;
+  fileId: string;
+  file: {
+    pathName: string;
+    name: string;
+    parentId: string;
+    contentUrl: string;
+    description: string;
+    size: number;
+    mimeType: string;
+    expiry: string;
+    id: string;
+  };
+  targetUser: {
+    id: string;
+    name: string;
+    email: string;
+    roleId: string;
+    departmentId: string;
+    managerId: string;
+  };
+  status: 'draft' | 'submitted' | 'in_review' | 'approved' | 'rejected' | 'completed';
+  description: string;
+  workflowId: string;
+  workflowName: string;
+  submittedAt: string;
+  completedAt: string | null;
+  currentStep: number;
+  totalSteps: number;
+  steps: RequestStep[];
+}
+
+interface RequestStep {
+  id: string;
+  stepNumber: number;
+  stepName: string;
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  assignedToId: string;
+  assignedToName: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  comments: string | null;
+}
+
+export default function RequestSetDetailPage() {
+  const params = useParams();
+  const requestId = params.Id as string;
+  const [request, setRequest] = useState<Request | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { pushToast } = useToast();
+  const { isDark } = useTheme();
+
+  useEffect(() => {
+    loadRequest();
+  }, [requestId]);
+
+  const loadRequest = async () => {
+    try {
+      // Mock data for demonstration - replace with actual API call
+      const mockRequest: Request = {
+        id: requestId,
+        fileId: 'file-1',
+        file: {
+          pathName: '/documents/project-plan.docx',
+          name: 'Project Plan - Phase 2',
+          parentId: 'folder-1',
+          contentUrl: 'https://example.com/file1',
+          description: 'Detailed project plan for phase 2',
+          size: 1048576,
+          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          expiry: '2024-12-31',
+          id: 'file-1'
+        },
+        targetUser: {
+          id: 'user-2',
+          name: 'Sarah Johnson',
+          email: 'sarah.johnson@company.com',
+          roleId: 'user',
+          departmentId: 'dept-2',
+          managerId: 'manager-2'
+        },
+        status: 'in_review',
+        description: 'Request for Sarah to review project plan for phase 2 implementation. This includes timeline, resource allocation, and budget considerations.',
+        workflowId: 'workflow-1',
+        workflowName: 'Document Review',
+        submittedAt: '2024-11-01T09:00:00Z',
+        completedAt: null,
+        currentStep: 2,
+        totalSteps: 3,
+        steps: [
+          {
+            id: 'step-1',
+            stepNumber: 1,
+            stepName: 'Initial Review',
+            status: 'approved',
+            assignedToId: 'reviewer-1',
+            assignedToName: 'Mike Wilson',
+            startedAt: '2024-11-01T10:00:00Z',
+            completedAt: '2024-11-01T14:00:00Z',
+            comments: 'Document structure looks good. Ready for technical review.'
+          },
+          {
+            id: 'step-2',
+            stepNumber: 2,
+            stepName: 'Technical Review',
+            status: 'pending',
+            assignedToId: 'tech-1',
+            assignedToName: 'Sarah Johnson',
+            startedAt: '2024-11-01T14:00:00Z',
+            completedAt: null,
+            comments: null
+          },
+          {
+            id: 'step-3',
+            stepNumber: 3,
+            stepName: 'Final Approval',
+            status: 'pending',
+            assignedToId: 'manager-1',
+            assignedToName: 'Robert Davis',
+            startedAt: null,
+            completedAt: null,
+            comments: null
+          }
+        ]
+      };
+      
+      setRequest(mockRequest);
+    } catch (error) {
+      pushToast({ message: 'Failed to load request details', type: 'error' });
+      console.error('Error loading request:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'submitted':
+        return 'bg-blue-100 text-blue-800';
+      case 'in_review':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return 'Draft';
+      case 'submitted':
+        return 'Submitted';
+      case 'in_review':
+        return 'In Review';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      case 'completed':
+        return 'Completed';
+      default:
+        return status;
+    }
+  };
+
+  const getProgressPercentage = (currentStep: number, totalSteps: number) => {
+    return Math.round((currentStep / totalSteps) * 100);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className={`mt-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Loading request details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!request) {
+    return (
+      <div className="text-center py-12">
+        <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-900'} mb-2`}>Request not found</h3>
+        <p className={`mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>The requested request could not be found.</p>
+        <Link
+          href="/adm/requests/sets"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
+          Back to Requests
+        </Link>
+      </div>
+    );
+  }
+
+  const handleDownload = () => {
+    // TODO: Implement download functionality
+    pushToast({ message: 'Downloading document...', type: 'info' });
+  };
+
+  const handleSubmit = () => {
+    // TODO: Implement submit functionality
+    pushToast({ message: 'Request submitted successfully', type: 'success' });
+  };
+
+  const handleCancel = () => {
+    // TODO: Implement cancel functionality
+    pushToast({ message: 'Request cancelled', type: 'warning' });
+  };
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <Link
+            href="/adm/requests/sets"
+            className={`p-2 rounded-lg hover:${isDark ? 'bg-gray-700' : 'bg-gray-100'} ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Request Details</h1>
+            <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>View and manage your request</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
+            {getStatusText(request.status)}
+          </span>
+          {request.status === 'draft' && (
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700">
+              <Edit className="w-4 h-4" />
+              <span>Edit</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <RequestDetailView
+        request={request}
+        onDownload={handleDownload}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+      />
+    </div>
+  );
+}

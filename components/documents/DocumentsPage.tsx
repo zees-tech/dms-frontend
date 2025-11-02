@@ -561,7 +561,7 @@ export default function DocumentsPage() {
   const files = currentFolder.children?.filter(item => item.type === 'file') as File[] || [];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         {/* <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -723,6 +723,6 @@ export default function DocumentsPage() {
 
       {/* Toast Notifications */}
       <ToastContainer />
-    </DashboardLayout>
+    </>
   );
 }

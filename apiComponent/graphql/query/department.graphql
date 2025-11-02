@@ -1,0 +1,16 @@
+query GetDepartments($skip: Int, $take: Int, $where: DepartmentFilterInput, $order: [DepartmentSortInput!]) {
+  departments(skip: $skip, take: $take, where: $where, order: $order) {
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    items {
+      id
+      name
+      description
+      code
+      parentDepartmentId
+    }
+    totalCount
+  }
+}

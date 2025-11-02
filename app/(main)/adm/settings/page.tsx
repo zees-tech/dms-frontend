@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import ThemeSelector from "@/components/ui/ThemeSelector";
 import { User, Lock, Palette, Eye, EyeOff } from 'lucide-react';
 
@@ -274,7 +273,6 @@ export default function SettingsPage() {
   };
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -308,6 +306,5 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }

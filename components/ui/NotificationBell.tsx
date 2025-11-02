@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { Bell, CheckCircle, XCircle, AlertTriangle, Info, X, RefreshCw } from 'lucide-react';
 import { useNotifications, Notification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { colorSchemes } from '@/lib/theme';
