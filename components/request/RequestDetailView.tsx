@@ -1,8 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { User, FileText, Calendar, Clock, CheckCircle, XCircle, Download } from 'lucide-react';
+import { User, Calendar, CheckCircle, XCircle, Eye } from 'lucide-react';
 import { Request } from '@/apiComponent/graphql/generated/graphql';
+import { ProcessRequest } from '@/apiComponent/graphql/request';
+import DocumentPreview from './DocumentPreview';
+import RequestActionModal from './RequestActionModal';
+import { smartDownloadFile } from '@/apiComponent/rest/fileDownload';
 
 // interface Request {
 //   id: string;
@@ -51,61 +56,82 @@ import { Request } from '@/apiComponent/graphql/generated/graphql';
 
 interface RequestDetailViewProps {
   request: Request;
-  onEdit?: () => void;
-  onDownload?: () => void;
-  onSubmit?: () => void;
-  onCancel?: () => void;
+  onRequestProcessed?: () => void;
 }
 
 export default function RequestDetailView({
   request,
-  onEdit,
-  onDownload,
-  onSubmit,
-  onCancel
+  onRequestProcessed
 }: RequestDetailViewProps) {
   const { isDark } = useTheme();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | null>(null);
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | null>(null);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800';
-      case 'submitted':
-        return 'bg-blue-100 text-blue-800';
-      case 'in_review':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'completed':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+
+
+  const handleOpenActionModal = (action: 'approve' | 'reject') => {
+    setCurrentAction(action);
+    setIsActionModalOpen(true);
+  };
+
+  const handleCloseActionModal = () => {
+    if (!isProcessing) {
+      setIsActionModalOpen(false);
+      setCurrentAction(null);
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return 'Draft';
-      case 'submitted':
-        return 'Submitted';
-      case 'in_review':
-        return 'In Review';
-      case 'approved':
-        return 'Approved';
-      case 'rejected':
-        return 'Rejected';
-      case 'completed':
-        return 'Completed';
-      default:
-        return status;
+  const handleSubmitAction = async (comment: string) => {
+    if (isProcessing || !currentAction) return;
+
+    setIsProcessing(true);
+    setProcessingAction(currentAction);
+
+    try {
+      const { data, error } = await ProcessRequest(
+        request.id,
+        currentAction,
+        comment || null,
+        currentAction === 'reject' ? comment || null : null
+      );
+
+      if (error) {
+        console.error(`Failed to ${currentAction} request:`, error);
+        alert(`Failed to ${currentAction} request. Please try again.`);
+        return;
+      }
+
+      if (data?.processRequest) {
+        onRequestProcessed?.();
+        handleCloseActionModal();
+      }
+    } catch (error) {
+      console.error(`Error ${currentAction}ing request:`, error);
+      alert(`An error occurred while ${currentAction}ing the request.`);
+    } finally {
+      setIsProcessing(false);
+      setProcessingAction(null);
     }
   };
 
-  const getProgressPercentage = (currentStep: number, totalSteps: number) => {
-    return Math.round((currentStep / totalSteps) * 100);
+  const handlePreviewDocument = () => {
+    if (request.file) {
+      setIsPreviewOpen(true);
+    }
+  };
+
+  const handleDownloadDocument = async () => {
+    if (request.file) {
+      try {
+        await smartDownloadFile(request.file.id, request.file.name);
+      } catch (error) {
+        console.error('Download failed:', error);
+        alert('Failed to download document. Please try again.');
+      }
+    }
   };
 
   return (
@@ -276,33 +302,68 @@ export default function RequestDetailView({
         <div className={`rounded-lg border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Actions</h2>
           <div className="space-y-3">
-            {request.status !== 'COMPLETED' && (
+            {request.status !== 'COMPLETED' && request.status !== 'APPROVED' && request.status !== 'REJECTED' && (
+              <>
+                <button
+                  onClick={() => handleOpenActionModal('approve')}
+                  disabled={isProcessing}
+                  className={`w-full px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                    } text-white`}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Approve Request</span>
+                </button>
+                <button
+                  onClick={() => handleOpenActionModal('reject')}
+                  disabled={isProcessing}
+                  className={`w-full px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                    } text-white`}
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Reject Request</span>
+                </button>
+              </>
+            )}
+            {request.file && (
               <button
-                onClick={onSubmit}
-                className="w-full bg-green-600 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 hover:bg-green-700"
+                onClick={handlePreviewDocument}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-700 transition-colors"
               >
-                <span>Approve Request</span>
+                <Eye className="w-4 h-4" />
+                <span>Preview Document</span>
               </button>
             )}
-            {request.status !== 'COMPLETED' && (
-              <button
-                onClick={onCancel}
-                className="w-full bg-red-600 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 hover:bg-red-700"
-              >
-                <XCircle className="w-4 h-4" />
-                <span>Reject Request</span>
-              </button>
-            )}
-            {request.file && (<button
-              onClick={onDownload}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-700"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download Document</span>
-            </button>)}
           </div>
         </div>
       </div>
+
+      {/* Document Preview Modal */}
+      {request.file && (
+        <DocumentPreview
+          file={{
+            id: request.file.id,
+            name: request.file.name,
+            mimeType: request.file.mimeType,
+            size: request.file.size,
+            contentUrl: request.file.contentUrl || undefined,
+            description: request.file.description || undefined
+          }}
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          onDownload={handleDownloadDocument}
+        />
+      )}
+
+      {/* Request Action Modal */}
+      {currentAction && (
+        <RequestActionModal
+          isOpen={isActionModalOpen}
+          onClose={handleCloseActionModal}
+          onSubmit={handleSubmitAction}
+          action={currentAction}
+          isLoading={isProcessing}
+        />
+      )}
     </div>
   );
 }
