@@ -226,19 +226,10 @@ export default function RequestSetDetailPage() {
     );
   }
 
-  const handleDownload = () => {
-    // TODO: Implement download functionality
-    pushToast({ message: 'Downloading document...', type: 'info' });
-  };
-
-  const handleSubmit = () => {
-    // TODO: Implement submit functionality
-    pushToast({ message: 'Request submitted successfully', type: 'success' });
-  };
-
-  const handleCancel = () => {
-    // TODO: Implement cancel functionality
-    pushToast({ message: 'Request cancelled', type: 'warning' });
+  const handleRequestProcessed = () => {
+    // Reload the request data after processing
+    loadRequest();
+    pushToast({ message: 'Request processed successfully', type: 'success' });
   };
 
   return (
@@ -272,9 +263,7 @@ export default function RequestSetDetailPage() {
 
       <RequestDetailView
         request={request}
-        onDownload={handleDownload}
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
+        onRequestProcessed={handleRequestProcessed}
       />
     </div>
   );
