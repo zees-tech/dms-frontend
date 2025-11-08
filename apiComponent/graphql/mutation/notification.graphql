@@ -1,0 +1,24 @@
+mutation MarkNotificationAsRead($id: UUID!) {
+  markNotificationAsRead(notificationId: $id) {
+    id
+    title
+    message
+    type
+    relatedEntityId
+    relatedEntityType
+    status
+    priority
+    actionUrl
+    expiresAt
+    readAt
+    metadata
+  }
+}
+
+mutation MarkAllNotificationsAsRead {
+  markAllNotificationsAsRead
+}
+
+mutation DeleteNotification($id: UUID!){
+  deleteNotification(notificationId: $id)
+}
