@@ -32,6 +32,10 @@ type PartialRequest = Pick<Request,
     departmentId?: string | null;
     managerId?: string | null;
   } | null;
+  workflow?: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 export default function RequestSetsPage() {
@@ -149,7 +153,7 @@ export default function RequestSetsPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-2">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Requests</h1>
@@ -164,11 +168,9 @@ export default function RequestSetsPage() {
             <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
               <tr>
                 <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
-                  File
+                   Request Name
                 </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
-                  Target User
-                </th>
+               
                 <th className={`px-6 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}>
                   Status
                 </th>
@@ -187,31 +189,11 @@ export default function RequestSetsPage() {
               {requests.map((request) => (
                 <tr key={request.id} className={`group hover:${isDark ? 'bg-gray-700' : 'bg-gray-50'} transition-colors`}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <FileText className="w-5 h-5 text-gray-400 mr-3" />
-                      <div>
-                        <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {request.file?.name || 'Unknown File'}
-                        </div>
-                        <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                          {request.file?.pathName}
-                        </div>
-                      </div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {request.workflow?.name || 'N/A'}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <User className="w-4 h-4 text-gray-400 mr-2" />
-                      <div>
-                        <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {request.user?.name || 'Unknown User'}
-                        </div>
-                        <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                          {request.user?.email}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
+                  
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {getStatusIcon(request.status)}
@@ -228,9 +210,14 @@ export default function RequestSetsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
-                        {new Date(request.submittedAt).toLocaleDateString()}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
+                          {new Date(request.submittedAt).toLocaleDateString()}
+                        </span>
+                        <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-400'}`}>
+                          {new Date(request.submittedAt).toLocaleTimeString()}
+                        </span>
+                      </div>
                     </div>
                   </td>
                   <td className={`sticky right-0 px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'bg-gray-800 group-hover:bg-gray-700' : 'bg-white group-hover:bg-gray-50'} border-l ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>

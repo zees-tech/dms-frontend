@@ -17,6 +17,7 @@ query GetMyNotifications(
       expiresAt
       readAt
       metadata
+      for
     }
     pageInfo {
       hasNextPage

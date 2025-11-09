@@ -27,7 +27,7 @@ export const GetPendingRequests = async (
       errors?: Array<{ message: string }>;
     }>("", {
       query: print(GetPendingRequestsDocument),
-      variables: { skip, take, filter, order },
+      variables: { skip, take, where: filter, order },
     });
     return { data: response.data?.data || null, error: null };
   } catch (err) {

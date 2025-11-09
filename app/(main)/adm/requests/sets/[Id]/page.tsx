@@ -66,87 +66,26 @@ export default function RequestSetDetailPage() {
   const { isDark } = useTheme();
 
   const loadRequest = useCallback(async () => {
-    try {
-      // Mock data for demonstration - replace with actual API call
-      // const mockRequest: Request = {
-      //   id: requestId,
-      //   fileId: 'file-1',
-      //   file: {
-      //     pathName: '/documents/project-plan.docx',
-      //     name: 'Project Plan - Phase 2',
-      //     parentId: 'folder-1',
-      //     contentUrl: 'https://example.com/file1',
-      //     description: 'Detailed project plan for phase 2',
-      //     size: 1048576,
-      //     mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      //     expiry: '2024-12-31',
-      //     id: 'file-1'
-      //   },
-      //   targetUser: {
-      //     id: 'user-2',
-      //     name: 'Sarah Johnson',
-      //     email: 'sarah.johnson@company.com',
-      //     roleId: 'user',
-      //     departmentId: 'dept-2',
-      //     managerId: 'manager-2'
-      //   },
-      //   status: 'in_review',
-      //   description: 'Request for Sarah to review project plan for phase 2 implementation. This includes timeline, resource allocation, and budget considerations.',
-      //   workflowId: 'workflow-1',
-      //   workflowName: 'Document Review',
-      //   submittedAt: '2024-11-01T09:00:00Z',
-      //   completedAt: null,
-      //   currentStep: 2,
-      //   totalSteps: 3,
-      //   steps: [
-      //     {
-      //       id: 'step-1',
-      //       stepNumber: 1,
-      //       stepName: 'Initial Review',
-      //       status: 'approved',
-      //       assignedToId: 'reviewer-1',
-      //       assignedToName: 'Mike Wilson',
-      //       startedAt: '2024-11-01T10:00:00Z',
-      //       completedAt: '2024-11-01T14:00:00Z',
-      //       comments: 'Document structure looks good. Ready for technical review.'
-      //     },
-      //     {
-      //       id: 'step-2',
-      //       stepNumber: 2,
-      //       stepName: 'Technical Review',
-      //       status: 'pending',
-      //       assignedToId: 'tech-1',
-      //       assignedToName: 'Sarah Johnson',
-      //       startedAt: '2024-11-01T14:00:00Z',
-      //       completedAt: null,
-      //       comments: null
-      //     },
-      //     {
-      //       id: 'step-3',
-      //       stepNumber: 3,
-      //       stepName: 'Final Approval',
-      //       status: 'pending',
-      //       assignedToId: 'manager-1',
-      //       assignedToName: 'Robert Davis',
-      //       startedAt: null,
-      //       completedAt: null,
-      //       comments: null
-      //     }
-      //   ]
-      // };
+    if (!requestId) {
+      setLoading(false);
+      setRequest(null);
+      return;
+    }
 
+    try {
       const { data, error } = await GetPendingRequests(0, 1, { id: { eq: requestId } });
       if (error) throw error;
 
       if (data?.pendingRequests?.items && data.pendingRequests.items.length > 0) {
         setRequest(data.pendingRequests.items[0] as Request);
-        return;
+      } else {
+        setRequest(null);
+        pushToast({ message: 'Request not found', type: 'error' });
       }
-
-      setRequest(null);
     } catch (error) {
       pushToast({ message: 'Failed to load request details', type: 'error' });
       console.error('Error loading request:', error);
+      setRequest(null);
     } finally {
       setLoading(false);
     }

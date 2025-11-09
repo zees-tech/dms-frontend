@@ -32,31 +32,18 @@ export const authService = {
     },
 
     async getCurrentUser(): Promise<User | null> {
-        const token = localStorage.getItem('auth-token');
-
-        if (!token) {
-            return null;
-        }
-
-        try {
-            const response = await fetch('/api/auth', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                localStorage.removeItem('auth-token');
-                return null;
-            }
-
-            const data = await response.json();
-            return data.user;
-        } catch (error) {
+        // Get user from stored login response instead of calling API
+        const storedResponse = this.getStoredLoginResponse();
+        
+        if (!storedResponse || !storedResponse.user) {
+            // Clean up if data is invalid
             localStorage.removeItem('auth-token');
             localStorage.removeItem('auth-response');
             return null;
         }
+
+        // Return the user from stored response
+        return storedResponse.user;
     },
 
     async register(email: string, password: string, name: string, departmentName: string, roleName: string): Promise<void> {
