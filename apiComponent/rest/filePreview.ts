@@ -43,12 +43,12 @@ export async function getFilePreviewUrl(fileId: string): Promise<FilePreviewResp
 /**
  * Check if a file can be previewed
  */
-export async function canPreviewFile(fileId: string): Promise<boolean> {
-    try {
-        const response = await httpClient.get(`/api/Files/${fileId}/can-preview`);
-        return response.status === 200 && response.data?.canPreview === true;
-    } catch (error) {
-        console.error('Error checking preview availability:', error);
-        return false;
-    }
-}
+// export async function canPreviewFile(fileId: string): Promise<boolean> {
+//     try {
+//         const response = await httpClient.get(`/api/Files/${fileId}/can-preview`);
+//         return response.status === 200 && response.data?.canPreview === true;
+//     } catch (error) {
+//         console.error('Error checking preview availability:', error);
+//         return false;
+//     }
+// }

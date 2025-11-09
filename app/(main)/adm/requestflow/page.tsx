@@ -158,7 +158,7 @@ export default function RequestFlowPage() {
             allowDelegation={workflow.allowDelegation}
             status={workflow.isActive ? 'active' : 'inactive'}
             steps={workflow.steps}
-            onToggleStatus={(workflowId, currentStatus) => toggleWorkflowStatus(workflowId, currentStatus === 'active')}
+            onToggleStatus={(workflowId: string, currentStatus: string) => toggleWorkflowStatus(workflowId, currentStatus === 'active')}
             onDelete={deleteWorkflow}
           />
         ))}

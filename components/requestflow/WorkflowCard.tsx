@@ -1,15 +1,20 @@
 'use client';
 
-import { Users, CheckCircle, ArrowRight } from 'lucide-react';
+import { Users, CheckCircle, ArrowRight, Power, Trash2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface WorkflowCardProps {
+  id: string;
   name: string;
   description: string;
   isSequential: boolean;
   requiredApprovals: number;
+  timeoutHours: number;
+  allowDelegation: boolean;
   status: 'active' | 'inactive';
   steps: WorkflowStep[];
+  onToggleStatus: (workflowId: string, currentStatus: string) => void;
+  onDelete: (workflowId: string) => void;
 }
 
 interface WorkflowStep {
@@ -21,12 +26,17 @@ interface WorkflowStep {
 }
 
 export default function WorkflowCard({
+  id,
   name,
   description,
   isSequential,
   requiredApprovals,
+  timeoutHours,
+  allowDelegation,
   status,
-  steps
+  steps,
+  onToggleStatus,
+  onDelete
 }: WorkflowCardProps) {
   const { isDark } = useTheme();
 
@@ -53,11 +63,31 @@ export default function WorkflowCard({
               {description}
             </p>
           </div>
-          <div className={`ml-4 px-3 py-1 rounded-full text-xs font-semibold ${status === 'active'
-            ? 'bg-emerald-100 text-emerald-700 shadow-sm'
-            : `${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`
-            }`}>
-            {status === 'active' ? '● Active' : '○ Inactive'}
+          <div className="flex items-center space-x-2 ml-4">
+            <div className={`px-3 py-1 rounded-full text-xs font-semibold ${status === 'active'
+              ? 'bg-emerald-100 text-emerald-700 shadow-sm'
+              : `${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`
+              }`}>
+              {status === 'active' ? '● Active' : '○ Inactive'}
+            </div>
+            <button
+              onClick={() => onToggleStatus(id, status)}
+              className={`p-2 rounded-lg transition-colors ${
+                status === 'active' 
+                  ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' 
+                  : 'bg-green-100 text-green-600 hover:bg-green-200'
+              }`}
+              title={status === 'active' ? 'Deactivate' : 'Activate'}
+            >
+              <Power className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(id)}
+              className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+              title="Delete workflow"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
 

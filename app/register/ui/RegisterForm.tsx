@@ -90,7 +90,7 @@ export default function RegisterForm() {
                 return;
             }
             if (data?.roles) {
-                const mappedRoles = data.roles.map((role: any) => ({
+                const mappedRoles = data.roles.map((role: { id: string; name: string; code?: string; description?: string }) => ({
                     id: role.id,
                     name: role.name,
                     code: role.code || "",
@@ -159,9 +159,10 @@ export default function RegisterForm() {
             );
             showToast.success("Registration successful! Please login.");
             router.push("/login");
-        } catch (error: any) {
-            setError(error.message || "Registration failed");
-            showToast.error(error.message || "Registration failed. Please try again.");
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : "Registration failed";
+            setError(errorMessage);
+            showToast.error(errorMessage || "Registration failed. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -288,7 +289,7 @@ export default function RegisterForm() {
                         }}
                     >
                         <p className="text-sm text-slate-400 italic">
-                            "Your journey to efficient document management starts here."
+                            &ldquo;Your journey to efficient document management starts here.&rdquo;
                         </p>
                     </div>
                 </div>
