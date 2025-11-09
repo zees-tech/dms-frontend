@@ -16,6 +16,8 @@ query GetMyNotifications(
       actionUrl
       expiresAt
       readAt
+      createdAt
+      updatedAt
       metadata
       for
     }

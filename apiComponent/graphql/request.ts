@@ -54,7 +54,7 @@ export const GetRequestFlow = async (
 
 export const ProcessRequest = async (
   requestId: string,
-  action: "approve" | "reject",
+  action: "approve" | "reject" | "cancel",
   comments: string | null = null,
   reason: string | null = null,
   client: ReturnType<typeof axios.create> | undefined = undefined
@@ -63,9 +63,10 @@ export const ProcessRequest = async (
     if (!client) client = graphqlClient;
 
     // Map action strings to RequestStepStatus enum values
-    const actionMap: Record<"approve" | "reject", RequestStatus> = {
+    const actionMap: Record<"approve" | "reject" | "cancel", RequestStatus> = {
       approve: RequestStatus.Approved,
       reject: RequestStatus.Rejected,
+      cancel: RequestStatus.Archived,
     };
 
     const response = await client.post<{

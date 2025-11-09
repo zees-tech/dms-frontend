@@ -68,13 +68,13 @@ export default function RequestDetailView({
   const router = useRouter();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | 'request-change' | null>(null);
+  const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit' | null>(null);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
-  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | 'request-change' | null>(null);
+  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit' | null>(null);
 
 
 
-  const handleOpenActionModal = (action: 'approve' | 'reject' | 'request-change') => {
+  const handleOpenActionModal = (action: 'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit') => {
     setCurrentAction(action);
     setIsActionModalOpen(true);
   };
@@ -94,7 +94,20 @@ export default function RequestDetailView({
 
     try {
       let data, error;
-      
+
+      if (currentAction === 'resubmit' && request.file != null) {
+        alert('Please provide a update document.');
+        setIsProcessing(false);
+        setProcessingAction(null);
+        return;
+      }
+      if ((currentAction === 'reject' || currentAction === 'request-change') && comment.trim() === '') {
+        alert('Please provide a reason for rejection.');
+        setIsProcessing(false);
+        setProcessingAction(null);
+        return;
+      }
+
       if (currentAction === 'request-change') {
         const result = await ChangeRequested(
           request.id,
@@ -106,7 +119,7 @@ export default function RequestDetailView({
       } else {
         const result = await ProcessRequest(
           request.id,
-          currentAction,
+          currentAction === 'resubmit' ? 'approve' : currentAction,
           comment || null,
           currentAction === 'reject' ? comment || null : null
         );
@@ -320,7 +333,7 @@ export default function RequestDetailView({
         <div className={`rounded-lg border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Actions</h2>
           <div className="space-y-3">
-            {request.status !== 'COMPLETED' && request.status !== 'APPROVED' && request.status !== 'REJECTED' && (
+            {request.status !== 'COMPLETED' && request.status !== 'APPROVED' && request.status !== 'REJECTED' && request.status !== 'CHANGES_REQUESTED' && (
               <div className="flex gap-2">
                 <button
                   onClick={() => handleOpenActionModal('approve')}
@@ -348,6 +361,28 @@ export default function RequestDetailView({
                 >
                   <XCircle className="w-4 h-4" />
                   <span>Reject Request</span>
+                </button>
+              </div>
+            )}
+            {request.status === 'CHANGES_REQUESTED' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleOpenActionModal('resubmit')}
+                  disabled={isProcessing}
+                  className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                    } text-white text-sm`}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Re-Submit Request</span>
+                </button>
+                <button
+                  onClick={() => handleOpenActionModal('cancel')}
+                  disabled={isProcessing}
+                  className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-yellow-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
+                    } text-white text-sm`}
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Cancel Request</span>
                 </button>
               </div>
             )}

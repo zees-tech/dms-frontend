@@ -8,7 +8,7 @@ interface RequestActionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (comment: string) => void;
-    action: 'approve' | 'reject' | 'request-change';
+    action: 'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit';
     isLoading: boolean;
 }
 
@@ -55,11 +55,15 @@ export default function RequestActionModal({
                                 <CheckCircle className="w-6 h-6 text-green-600" />
                             ) : action === 'reject' ? (
                                 <XCircle className="w-6 h-6 text-red-600" />
-                            ) : (
+                            ) : action === 'request-change' ? (
                                 <Edit className="w-6 h-6 text-yellow-600" />
+                            ) :  action === 'resubmit' ? (
+                                <Edit className="w-6 h-6 text-yellow-600" />
+                            ) : (
+                                <XCircle className="w-6 h-6 text-red-600" />
                             )}
                             <h3 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                {action === 'approve' ? 'Approve Request' : action === 'reject' ? 'Reject Request' : 'Request Change'}
+                                {action === 'approve' ? 'Approve Request' : action === 'reject' ? 'Reject Request' : action === 'request-change' ? 'Request Change': action === 'resubmit' ? 'Re-Submit Change' : 'Cancel Request'}
                             </h3>
                         </div>
                         <button
@@ -79,7 +83,7 @@ export default function RequestActionModal({
                                 htmlFor="comment"
                                 className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
                             >
-                                {action === 'approve' ? 'Comments (optional)' : action === 'reject' ? 'Reason for rejection' : 'Requested changes'}
+                                {action === 'approve' ? 'Comments (optional)' : action === 'reject' ? 'Reason for rejection' :  action === 'request-change' ? 'Requested changes' : 'Reason for cancellation'}
                             </label>
                             <textarea
                                 id="comment"
@@ -94,8 +98,8 @@ export default function RequestActionModal({
                                     action === 'approve'
                                         ? 'Add any comments about this approval...'
                                         : action === 'reject'
-                                        ? 'Please provide a reason for rejection...'
-                                        : 'Please describe the changes requested...'
+                                            ? 'Please provide a reason for rejection...'
+                                            : 'Please describe the changes requested...'
                                 }
                                 disabled={isLoading}
                             />
@@ -117,27 +121,26 @@ export default function RequestActionModal({
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center justify-center space-x-2 ${
-                                    action === 'approve'
-                                        ? isLoading
-                                            ? 'bg-green-400 cursor-not-allowed'
-                                            : 'bg-green-600 hover:bg-green-700'
-                                        : action === 'reject'
+                                className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center justify-center space-x-2 ${action === 'approve'
+                                    ? isLoading
+                                        ? 'bg-green-400 cursor-not-allowed'
+                                        : 'bg-green-600 hover:bg-green-700'
+                                    : action === 'reject'
                                         ? isLoading
                                             ? 'bg-red-400 cursor-not-allowed'
                                             : 'bg-red-600 hover:bg-red-700'
                                         : isLoading
-                                        ? 'bg-yellow-400 cursor-not-allowed'
-                                        : 'bg-yellow-600 hover:bg-yellow-700'
-                                }`}
+                                            ? 'bg-yellow-400 cursor-not-allowed'
+                                            : 'bg-yellow-600 hover:bg-yellow-700'
+                                    }`}
                             >
                                 {isLoading ? (
                                     <>
                                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        <span>{action === 'approve' ? 'Approving...' : action === 'reject' ? 'Rejecting...' : 'Requesting changes...'}</span>
+                                        <span>{action === 'approve' ? 'Approving...' : action === 'reject' ? 'Rejecting...' : action === 'request-change' ? 'Requesting changes...': action === 'resubmit' ? 'Re-Submit Change' : 'Cancelling...'}</span>
                                     </>
                                 ) : (
-                                    <span>{action === 'approve' ? 'Approve' : action === 'reject' ? 'Reject' : 'Request Change'}</span>
+                                    <span>{action === 'approve' ? 'Approve' : action === 'reject' ? 'Reject' :  action === 'request-change' ? 'Request Change' : action === 'resubmit' ? 'Re-Submit Change': 'Cancel Request'}</span>
                                 )}
                             </button>
                         </div>

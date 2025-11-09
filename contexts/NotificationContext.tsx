@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { GetNotifications, MarkNotificationAsRead, MarkAllNotificationsAsRead, DeleteNotification } from '@/apiComponent/graphql/notification';
 
 export interface Notification {
@@ -26,12 +26,29 @@ export interface Notification {
     for?: string;
 }
 
+interface ApiNotification {
+    id: string;
+    title?: string;
+    message?: string;
+    type: string;
+    createdAt?: string;
+    readAt?: string;
+    status: string;
+    priority?: string;
+    relatedEntityId?: string | null;
+    relatedEntityType?: string | null;
+    actionUrl?: string | null;
+    expiresAt?: string | null;
+    metadata?: string | null;
+    for?: string;
+}
+
 interface NotificationContextType {
     notifications: Notification[];
     unreadCount: number;
     hasNextPage: boolean;
     isLoading: boolean;
-    addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+    addNotification: (notification: Notification) => void;
     fetchNotifications: (skip?: number, take?: number) => Promise<void>;
     loadMore: () => Promise<void>;
     markAsRead: (id: string) => Promise<void>;
@@ -48,31 +65,38 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(false);
     const [currentSkip, setCurrentSkip] = useState(0);
     const take = 10;
+    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const notificationsRef = useRef(notifications);
+
+    // Keep the ref updated with current notifications
+    useEffect(() => {
+        notificationsRef.current = notifications;
+    }, [notifications]);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
-    const mapApiNotificationToUI = (apiNotif: any): Notification => {
+    const mapApiNotificationToUI = (apiNotif: ApiNotification): Notification => {
         // Map API notification type to UI type
         let uiType: 'info' | 'success' | 'warning' | 'error' = 'info';
-        if (apiNotif.type === 'ApprovalRequired' || apiNotif.type === 'HIGH') {
+        if (apiNotif.type === 'ApprovalRequired') {
             uiType = 'warning';
-        } else if (apiNotif.priority === 'HIGH') {
+        } else if (apiNotif.type === 'error') {
             uiType = 'error';
         } else if (apiNotif.type === 'success') {
             uiType = 'success';
         }
 
         // Use createdAt or current date for timestamp
-        const timestamp = apiNotif.readAt 
-            ? new Date(apiNotif.readAt) 
-            : (apiNotif.createdAt ? new Date(apiNotif.createdAt) : new Date());
+        // const timestamp = apiNotif.readAt 
+        //     ? new Date(apiNotif.readAt) 
+        //     : (apiNotif.createdAt ? new Date(apiNotif.createdAt) : new Date());
 
         return {
             id: apiNotif.id,
             title: apiNotif.title || '',
             message: apiNotif.message || '',
             type: uiType,
-            timestamp: timestamp,
+            timestamp: apiNotif.createdAt ? new Date(apiNotif.createdAt) : new Date(),
             read: apiNotif.status === 'READ' || !!apiNotif.readAt,
             originalType: apiNotif.type, // Store original API type
             relatedEntityId: apiNotif.relatedEntityId,
@@ -86,10 +110,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         };
     };
 
-    const fetchNotifications = useCallback(async (skip: number = 0, takeCount: number = take) => {
+    const fetchNotifications = useCallback(async (skip: number = 0, takeCount: number = take, latest: boolean = false) => {
         setIsLoading(true);
         try {
-            const { data, error } = await GetNotifications(skip, takeCount, null);
+            // Get the latest timestamp from existing notifications for filtering
+            const currentNotifications = notificationsRef.current;
+            const latestTimestamp = currentNotifications.length > 0
+                ? new Date(Math.max(...currentNotifications.map(n => n.timestamp.getTime()))).toISOString()
+                : undefined;
+
+            const filter = latest && latestTimestamp
+                ? { createdAt: { gt: latestTimestamp } }
+                : null;
+
+            const { data, error } = await GetNotifications(skip, takeCount, filter, undefined);
             if (error) {
                 console.error('Error fetching notifications:', error);
                 return;
@@ -97,15 +131,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             if (data && data.myNotifications) {
                 const apiNotifications = data.myNotifications.items || [];
                 const mappedNotifications = apiNotifications.map(mapApiNotificationToUI);
-                
-                if (skip === 0) {
+
+                if (skip === 0 && !latest) {
                     // First load - replace all notifications
                     setNotifications(mappedNotifications);
                 } else {
-                    // Load more - append to existing
-                    setNotifications(prev => [...prev, ...mappedNotifications]);
+                    // Load more - append only new notifications that don't already exist
+                    setNotifications(prev => {
+                        const existingIds = new Set(prev.map(n => n.id));
+                        const newNotifications = mappedNotifications.filter(n => !existingIds.has(n.id));
+                        return [...newNotifications, ...prev];
+                    });
                 }
-                
+
                 setHasNextPage(data.myNotifications.pageInfo.hasNextPage || false);
                 setCurrentSkip(skip + mappedNotifications.length);
             }
@@ -121,12 +159,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         await fetchNotifications(currentSkip, take);
     }, [hasNextPage, isLoading, currentSkip, fetchNotifications]);
 
-    const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+    const addNotification = (notification: Notification) => {
         const newNotification: Notification = {
             ...notification,
-            id: Math.random().toString(36).substr(2, 9),
-            timestamp: new Date(),
-            read: false,
+            // id: Math.random().toString(36).substr(2, 9),
         };
 
         setNotifications(prev => [newNotification, ...prev]);
@@ -168,6 +204,39 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         setHasNextPage(false);
         setCurrentSkip(0);
     };
+
+    // Start polling for notifications
+    const startPolling = useCallback(() => {
+        // Clear any existing interval
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+        }
+
+        // Fetch notifications immediately
+        fetchNotifications(0, 10);
+
+        // Set up interval for polling every 30 seconds
+        pollingIntervalRef.current = setInterval(() => {
+            fetchNotifications(0, 10, true); // Fetch only latest notifications
+        }, 30000); // 30 seconds
+    }, [fetchNotifications]);
+
+    // Stop polling for notifications
+    const stopPolling = useCallback(() => {
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+        }
+    }, []);
+
+    // Start polling when component mounts and stop when unmounts
+    useEffect(() => {
+        startPolling();
+
+        return () => {
+            stopPolling();
+        };
+    }, [startPolling, stopPolling]);
 
     return (
         <NotificationContext.Provider value={{
