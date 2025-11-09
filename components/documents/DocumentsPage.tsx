@@ -480,38 +480,65 @@ export default function DocumentsPage() {
   };
 
   const handleUploadFiles = async (files: FileList, folderId: string) => {
-    const newFiles: File[] = Array.from(files).map((file) => ({
-      id: Math.random().toString(36).substring(2, 9),
-      name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
-      type: 'file',
-      size: file.size,
-      mimeType: file.type || 'application/octet-stream',
-      extension: file.name.split('.').pop() || '',
-      folderId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      url: URL.createObjectURL(file), // Create blob URL for preview
-    }));
+    try {
+      setLoading(true);
 
-    let updatedFileSystem = fileSystem;
-    newFiles.forEach((file) => {
-      updatedFileSystem = upsertChild(updatedFileSystem, folderId, file);
-    });
+      // Fetch files from backend API to get the actual uploaded files
+      if (folderId !== 'root') {
+        const filesResult = await getFiles(folderId);
+        if (filesResult.error) {
+          throw new Error(filesResult.error.message);
+        }
 
-    setFileSystem(updatedFileSystem);
+        const apiFiles = filesResult.data?.files?.items || [];
 
-    // Update current folder if it's the target
-    if (currentFolder.id === folderId) {
-      const updatedCurrentFolder = findFolderById(updatedFileSystem, folderId);
-      if (updatedCurrentFolder) {
-        setCurrentFolder(updatedCurrentFolder);
+        // Map API files to our File type
+        const backendFiles: File[] = apiFiles.map(file => ({
+          id: file.id,
+          name: file.name,
+          type: 'file' as const,
+          size: file.size || 0,
+          mimeType: file.mimeType || 'application/octet-stream',
+          extension: file.name.split('.').pop() || '',
+          folderId: folderId,
+          createdAt: file.createdAt,
+          updatedAt: file.updatedAt,
+          url: '', // Will be generated when needed
+        }));
+
+        // Update the folder with files from backend (replace all files, keep folders)
+        const updatedFolder: Folder = {
+          ...currentFolder,
+          children: [
+            ...(currentFolder.children || []).filter(child => child.type === 'folder'),
+            ...backendFiles
+          ]
+        };
+
+        // Update the file system with the folder containing files
+        const updatedFileSystem = updateFolder(fileSystem, updatedFolder);
+        setFileSystem(updatedFileSystem);
+        setCurrentFolder(updatedFolder);
+
+        pushToast({
+          message: `Files refreshed successfully`,
+          type: 'success',
+        });
+      } else {
+        pushToast({
+          message: `${files.length} file(s) uploaded successfully`,
+          type: 'success',
+        });
       }
+    } catch (error) {
+      console.error('Error refreshing files after upload:', error);
+      pushToast({
+        message: 'Files uploaded but failed to refresh file list',
+        type: 'warning',
+      });
+    } finally {
+      setLoading(false);
     }
-
-    pushToast({
-      message: `${newFiles.length} file(s) uploaded successfully`,
-      type: 'success',
-    });
   };
 
 

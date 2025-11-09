@@ -229,14 +229,26 @@ export default function FileUploadDrawer({
 
                     console.log('Upload completed successfully:', completeResponse);
 
-                    // Mark file as completed
-                    setUploadFilesState(prev =>
-                        prev.map(f =>
-                            f.id === uploadFile.id ? { ...f, status: 'completed', progress: 100 } : f
-                        )
-                    );
+                    // Check if upload was successful
+                    if (completeResponse.success) {
+                        // Mark file as completed
+                        setUploadFilesState(prev =>
+                            prev.map(f =>
+                                f.id === uploadFile.id ? { ...f, status: 'completed', progress: 100 } : f
+                            )
+                        );
 
-                    return { success: true, file: uploadFile.file, metadata: completeResponse.fileMetadata };
+                        return { success: true, file: uploadFile.file, metadata: completeResponse.fileMetadata };
+                    } else {
+                        // Mark file as failed if success is false
+                        setUploadFilesState(prev =>
+                            prev.map(f =>
+                                f.id === uploadFile.id ? { ...f, status: 'error', progress: 0 } : f
+                            )
+                        );
+
+                        return { success: false, file: uploadFile.file, error: 'Upload failed: success flag is false' };
+                    }
                 } catch (error) {
                     console.error(`Upload failed for ${uploadFile.file.name}:`, error);
                     console.error('Error details:', {
@@ -266,6 +278,17 @@ export default function FileUploadDrawer({
                 const fileList = new DataTransfer();
                 successfulFiles.forEach(result => fileList.items.add(result.file));
                 onUploadFiles(fileList.files, currentFolder.id);
+                
+                // Close drawer if all uploads were successful
+                const allSuccessful = results.every(result => result.success);
+                if (allSuccessful && results.length > 0) {
+                    // Small delay to show completion status before closing
+                    setTimeout(() => {
+                        onClose();
+                        // Clear completed files from state
+                        setUploadFilesState([]);
+                    }, 1000);
+                }
             }
 
         } catch (error) {

@@ -27,6 +27,10 @@ query GetPendingRequests(
         departmentId
         managerId
       }
+      workflow{
+        id
+        name
+      }
       userId
       status
       description

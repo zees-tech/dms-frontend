@@ -301,7 +301,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-2">
             {renderTabContent()}
           </div>
         </div>
