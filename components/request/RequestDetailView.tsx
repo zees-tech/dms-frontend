@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
-import { User, Calendar, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { User, Calendar, CheckCircle, XCircle, Eye, Edit } from 'lucide-react';
 import { Request } from '@/apiComponent/graphql/generated/graphql';
-import { ProcessRequest } from '@/apiComponent/graphql/request';
+import { ProcessRequest, ChangeRequested } from '@/apiComponent/graphql/request';
 import DocumentPreview from './DocumentPreview';
 import RequestActionModal from './RequestActionModal';
 import { smartDownloadFile } from '@/apiComponent/rest/fileDownload';
@@ -64,15 +65,16 @@ export default function RequestDetailView({
   onRequestProcessed
 }: RequestDetailViewProps) {
   const { isDark } = useTheme();
+  const router = useRouter();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | null>(null);
+  const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | 'request-change' | null>(null);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
-  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | null>(null);
+  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | 'request-change' | null>(null);
 
 
 
-  const handleOpenActionModal = (action: 'approve' | 'reject') => {
+  const handleOpenActionModal = (action: 'approve' | 'reject' | 'request-change') => {
     setCurrentAction(action);
     setIsActionModalOpen(true);
   };
@@ -91,12 +93,26 @@ export default function RequestDetailView({
     setProcessingAction(currentAction);
 
     try {
-      const { data, error } = await ProcessRequest(
-        request.id,
-        currentAction,
-        comment || null,
-        currentAction === 'reject' ? comment || null : null
-      );
+      let data, error;
+      
+      if (currentAction === 'request-change') {
+        const result = await ChangeRequested(
+          request.id,
+          comment || null,
+          comment || null
+        );
+        data = result.data;
+        error = result.error;
+      } else {
+        const result = await ProcessRequest(
+          request.id,
+          currentAction,
+          comment || null,
+          currentAction === 'reject' ? comment || null : null
+        );
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error(`Failed to ${currentAction} request:`, error);
@@ -107,6 +123,8 @@ export default function RequestDetailView({
       if (data?.processRequest) {
         onRequestProcessed?.();
         handleCloseActionModal();
+        // Redirect to requests page after successful processing
+        router.push('/adm/requests/gets');
       }
     } catch (error) {
       console.error(`Error ${currentAction}ing request:`, error);
@@ -303,26 +321,35 @@ export default function RequestDetailView({
           <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Actions</h2>
           <div className="space-y-3">
             {request.status !== 'COMPLETED' && request.status !== 'APPROVED' && request.status !== 'REJECTED' && (
-              <>
+              <div className="flex gap-2">
                 <button
                   onClick={() => handleOpenActionModal('approve')}
                   disabled={isProcessing}
-                  className={`w-full px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-                    } text-white`}
+                  className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                    } text-white text-sm`}
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>Approve Request</span>
                 </button>
                 <button
+                  onClick={() => handleOpenActionModal('request-change')}
+                  disabled={isProcessing}
+                  className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-yellow-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
+                    } text-white text-sm`}
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Request Change</span>
+                </button>
+                <button
                   onClick={() => handleOpenActionModal('reject')}
                   disabled={isProcessing}
-                  className={`w-full px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-                    } text-white`}
+                  className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                    } text-white text-sm`}
                 >
                   <XCircle className="w-4 h-4" />
                   <span>Reject Request</span>
                 </button>
-              </>
+              </div>
             )}
             {request.file && (
               <button

@@ -48,7 +48,7 @@ export const MarkNotificationAsRead = async (
       errors?: Array<{ message: string }>;
     }>("", {
       query: print(MarkNotificationAsReadDocument),
-      variables: { notificationId },
+      variables: { id: notificationId },
     });
     return { data: response.data?.data || null, error: null };
   } catch (err) {
@@ -90,7 +90,7 @@ export const DeleteNotification = async (
       errors?: Array<{ message: string }>;
     }>("", {
       query: print(DeleteNotificationDocument),
-      variables: { notificationId },
+      variables: { id: notificationId },
     });
     return { data: response.data?.data || null, error: null };
   } catch (err) {

@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { X, CheckCircle, XCircle } from 'lucide-react';
+import { X, CheckCircle, XCircle, Edit } from 'lucide-react';
 
 interface RequestActionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (comment: string) => void;
-    action: 'approve' | 'reject';
+    action: 'approve' | 'reject' | 'request-change';
     isLoading: boolean;
 }
 
@@ -53,11 +53,13 @@ export default function RequestActionModal({
                         <div className="flex items-center space-x-3">
                             {action === 'approve' ? (
                                 <CheckCircle className="w-6 h-6 text-green-600" />
-                            ) : (
+                            ) : action === 'reject' ? (
                                 <XCircle className="w-6 h-6 text-red-600" />
+                            ) : (
+                                <Edit className="w-6 h-6 text-yellow-600" />
                             )}
                             <h3 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                {action === 'approve' ? 'Approve Request' : 'Reject Request'}
+                                {action === 'approve' ? 'Approve Request' : action === 'reject' ? 'Reject Request' : 'Request Change'}
                             </h3>
                         </div>
                         <button
@@ -77,7 +79,7 @@ export default function RequestActionModal({
                                 htmlFor="comment"
                                 className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
                             >
-                                {action === 'approve' ? 'Comments (optional)' : 'Reason for rejection'}
+                                {action === 'approve' ? 'Comments (optional)' : action === 'reject' ? 'Reason for rejection' : 'Requested changes'}
                             </label>
                             <textarea
                                 id="comment"
@@ -91,7 +93,9 @@ export default function RequestActionModal({
                                 placeholder={
                                     action === 'approve'
                                         ? 'Add any comments about this approval...'
-                                        : 'Please provide a reason for rejection...'
+                                        : action === 'reject'
+                                        ? 'Please provide a reason for rejection...'
+                                        : 'Please describe the changes requested...'
                                 }
                                 disabled={isLoading}
                             />
@@ -113,22 +117,27 @@ export default function RequestActionModal({
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center justify-center space-x-2 ${action === 'approve'
-                                    ? isLoading
-                                        ? 'bg-green-400 cursor-not-allowed'
-                                        : 'bg-green-600 hover:bg-green-700'
-                                    : isLoading
-                                        ? 'bg-red-400 cursor-not-allowed'
-                                        : 'bg-red-600 hover:bg-red-700'
-                                    }`}
+                                className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+                                    action === 'approve'
+                                        ? isLoading
+                                            ? 'bg-green-400 cursor-not-allowed'
+                                            : 'bg-green-600 hover:bg-green-700'
+                                        : action === 'reject'
+                                        ? isLoading
+                                            ? 'bg-red-400 cursor-not-allowed'
+                                            : 'bg-red-600 hover:bg-red-700'
+                                        : isLoading
+                                        ? 'bg-yellow-400 cursor-not-allowed'
+                                        : 'bg-yellow-600 hover:bg-yellow-700'
+                                }`}
                             >
                                 {isLoading ? (
                                     <>
                                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        <span>{action === 'approve' ? 'Approving...' : 'Rejecting...'}</span>
+                                        <span>{action === 'approve' ? 'Approving...' : action === 'reject' ? 'Rejecting...' : 'Requesting changes...'}</span>
                                     </>
                                 ) : (
-                                    <span>{action === 'approve' ? 'Approve' : 'Reject'}</span>
+                                    <span>{action === 'approve' ? 'Approve' : action === 'reject' ? 'Reject' : 'Request Change'}</span>
                                 )}
                             </button>
                         </div>

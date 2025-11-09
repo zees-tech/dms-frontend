@@ -1,16 +1,18 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCircle, XCircle, AlertTriangle, Info, X, RefreshCw } from 'lucide-react';
+import { Bell, CheckCircle, XCircle, AlertTriangle, Info, X, RefreshCw, File, User } from 'lucide-react';
 import { useNotifications, Notification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { colorSchemes } from '@/lib/theme';
+import { ProcessRequest } from '@/apiComponent/graphql/request';
 
 export default function NotificationBell() {
-    const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
+    const { notifications, unreadCount, hasNextPage, isLoading, markAsRead, markAllAsRead, removeNotification, loadMore, fetchNotifications } = useNotifications();
     const { isDark } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [processingApproval, setProcessingApproval] = useState<string | null>(null);
 
     const colors = colorSchemes.blue; // Using blue color scheme for notifications
 
@@ -24,6 +26,12 @@ export default function NotificationBell() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (isOpen && notifications.length === 0) {
+            fetchNotifications(0, 10);
+        }
+    }, [isOpen, notifications.length, fetchNotifications]);
 
     const getIcon = (type: Notification['type']) => {
         switch (type) {
@@ -56,6 +64,53 @@ export default function NotificationBell() {
         if (minutes < 60) return `${minutes}m ago`;
         if (hours < 24) return `${hours}h ago`;
         return `${days}d ago`;
+    };
+
+    const getEntityIcon = (notification: Notification) => {
+        if (notification.for && notification.for.toLowerCase().includes('file')) {
+            return File;
+        }
+        return User;
+    };
+
+    const handleApproval = async (notification: Notification) => {
+        if (!notification.relatedEntityId || processingApproval === notification.id) {
+            console.error('Missing relatedEntityId for notification:', notification);
+            alert('Cannot approve: Request ID is missing.');
+            return;
+        }
+        
+        setProcessingApproval(notification.id);
+        try {
+            console.log('Processing approval for requestId:', notification.relatedEntityId);
+            const { data, error } = await ProcessRequest(
+                notification.relatedEntityId,
+                'approve',
+                null,
+                null
+            );
+
+            if (error) {
+                console.error('Failed to approve request:', error);
+                alert(`Failed to approve request: ${error.message || 'Unknown error'}`);
+                return;
+            }
+
+            if (data?.processRequest) {
+                // Mark notification as read and refresh
+                await markAsRead(notification.id);
+                // Optionally refresh notifications
+                fetchNotifications(0, 10);
+            } else {
+                console.error('No data returned from ProcessRequest');
+                alert('Failed to approve request: No data returned.');
+            }
+        } catch (error) {
+            console.error('Error approving request:', error);
+            alert(`An error occurred while approving the request: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setProcessingApproval(null);
+        }
     };
 
     return (
@@ -111,69 +166,115 @@ export default function NotificationBell() {
                                 </p>
                             </div>
                         ) : (
-                            notifications.map((notification) => {
-                                const IconComponent = getIcon(notification.type);
-                                return (
-                                    <div
-                                        key={notification.id}
-                                        className={`p-4 border-b ${
-                                            isDark 
-                                                ? 'border-gray-700 hover:bg-gray-700' 
-                                                : 'border-gray-100 hover:bg-gray-50'
-                                        } transition-colors ${!notification.read ? (isDark ? 'bg-gray-700/50' : 'bg-blue-50') : ''}`}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <IconComponent className={`w-4 h-4 mt-0.5 flex-shrink-0 ${getTypeColor(notification.type)}`} />
-                                            <div className="flex-1 min-w-0">
-                                                <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-900'} mb-1`}>
-                                                    {notification.message}
-                                                </p>
-                                                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                    {formatTime(notification.timestamp)}
-                                                </p>
-                                                {notification.action && (
+                            <>
+                                {notifications.map((notification) => {
+                                    const IconComponent = getIcon(notification.type);
+                                    const EntityIcon = getEntityIcon(notification);
+                                    return (
+                                        <div
+                                            key={notification.id}
+                                            className={`p-4 border-b ${
+                                                isDark 
+                                                    ? 'border-gray-700 hover:bg-gray-700' 
+                                                    : 'border-gray-100 hover:bg-gray-50'
+                                            } transition-colors ${!notification.read ? (isDark ? 'bg-gray-700/50' : 'bg-blue-50') : ''}`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <IconComponent className={`w-4 h-4 mt-0.5 flex-shrink-0 ${getTypeColor(notification.type)}`} />
+                                                    <EntityIcon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                                                        isDark ? 'text-gray-400' : 'text-gray-500'
+                                                    }`} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    {notification.title && (
+                                                        <p className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-900'} mb-1`}>
+                                                            {notification.title}
+                                                        </p>
+                                                    )}
+                                                    <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-900'} mb-1`}>
+                                                        {notification.message}
+                                                    </p>
+                                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                        {formatTime(notification.timestamp)}
+                                                    </p>
+                                                    {notification.originalType === 'ApprovalRequired' && notification.status === 'UNREAD' && (
+                                                        <button
+                                                            onClick={() => handleApproval(notification)}
+                                                            disabled={processingApproval === notification.id}
+                                                            className={`mt-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                                                                processingApproval === notification.id
+                                                                    ? 'opacity-50 cursor-not-allowed'
+                                                                    : ''
+                                                            } ${
+                                                                isDark 
+                                                                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                                                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                            }`}
+                                                        >
+                                                            {processingApproval === notification.id ? 'Processing...' : 'Approve'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    {!notification.read && (
+                                                        <button
+                                                            onClick={() => markAsRead(notification.id)}
+                                                            className={`p-1 rounded ${
+                                                                isDark 
+                                                                    ? 'hover:bg-gray-600 text-gray-400' 
+                                                                    : 'hover:bg-gray-200 text-gray-500'
+                                                            }`}
+                                                            title="Mark as read"
+                                                        >
+                                                            <CheckCircle className="w-3 h-3" />
+                                                        </button>
+                                                    )}
                                                     <button
-                                                        onClick={notification.action.onClick}
-                                                        className={`mt-2 text-xs font-medium ${
-                                                            isDark 
-                                                                ? 'text-blue-400 hover:text-blue-300' 
-                                                                : 'text-blue-600 hover:text-blue-800'
-                                                        }`}
-                                                    >
-                                                        {notification.action.label}
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                {!notification.read && (
-                                                    <button
-                                                        onClick={() => markAsRead(notification.id)}
+                                                        onClick={() => removeNotification(notification.id)}
                                                         className={`p-1 rounded ${
                                                             isDark 
                                                                 ? 'hover:bg-gray-600 text-gray-400' 
                                                                 : 'hover:bg-gray-200 text-gray-500'
                                                         }`}
-                                                        title="Mark as read"
+                                                        title="Remove notification"
                                                     >
-                                                        <CheckCircle className="w-3 h-3" />
+                                                        <X className="w-3 h-3" />
                                                     </button>
-                                                )}
-                                                <button
-                                                    onClick={() => removeNotification(notification.id)}
-                                                    className={`p-1 rounded ${
-                                                        isDark 
-                                                            ? 'hover:bg-gray-600 text-gray-400' 
-                                                            : 'hover:bg-gray-200 text-gray-500'
-                                                    }`}
-                                                    title="Remove notification"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
+                                                </div>
                                             </div>
                                         </div>
+                                    );
+                                })}
+                                {hasNextPage && (
+                                    <div className={`p-4 border-t ${
+                                        isDark ? 'border-gray-700' : 'border-gray-200'
+                                    }`}>
+                                        <button
+                                            onClick={loadMore}
+                                            disabled={isLoading}
+                                            className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                                                isLoading
+                                                    ? 'opacity-50 cursor-not-allowed'
+                                                    : ''
+                                            } ${
+                                                isDark
+                                                    ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
+                                            }`}
+                                        >
+                                            {isLoading ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                                    Loading...
+                                                </span>
+                                            ) : (
+                                                'Load More'
+                                            )}
+                                        </button>
                                     </div>
-                                );
-                            })
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
