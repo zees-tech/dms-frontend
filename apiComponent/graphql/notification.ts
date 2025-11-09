@@ -3,6 +3,12 @@ import {
   GetMyNotificationsDocument,
   GetMyNotificationsQuery,
   NotificationFilterInput,
+  MarkAllNotificationsAsReadDocument,
+  MarkAllNotificationsAsReadMutation,
+  MarkNotificationAsReadDocument,
+  MarkNotificationAsReadMutation,
+  DeleteNotificationDocument,
+  DeleteNotificationMutation,
 } from "./generated/graphql";
 
 import { graphqlClient } from "../../utils/client";
@@ -28,44 +34,66 @@ export const GetNotifications = async (
   }
 };
 
-// export const MarkNotificationAsRead = async (
-//   notificationId: string,
-//   client: Axios.AxiosInstance | undefined = undefined
-// ): Promise<{
-//   data: MarkNotificationAsReadMutation | null;
-//   error: Error | null;
-// }> => {
-//   try {
-//     if (!client) client = graphqlClient;
-//     const response = await client.post<{
-//       data?: MarkNotificationAsReadMutation;
-//       errors?: Array<{ message: string }>;
-//     }>("", {
-//       query: print(MarkNotificationAsReadDocument),
-//       variables: { notificationId },
-//     });
-//     return { data: response.data?.data || null, error: null };
-//   } catch (err) {
-//     return { data: null, error: err as Error };
-//   }
-// };
+export const MarkNotificationAsRead = async (
+  notificationId: string,
+  client: Axios.AxiosInstance | undefined = undefined
+): Promise<{
+  data: MarkNotificationAsReadMutation | null;
+  error: Error | null;
+}> => {
+  try {
+    if (!client) client = graphqlClient;
+    const response = await client.post<{
+      data?: MarkNotificationAsReadMutation;
+      errors?: Array<{ message: string }>;
+    }>("", {
+      query: print(MarkNotificationAsReadDocument),
+      variables: { id: notificationId },
+    });
+    return { data: response.data?.data || null, error: null };
+  } catch (err) {
+    return { data: null, error: err as Error };
+  }
+};
 
-// export const MarkAllNotificationsAsRead = async (
-//   client: Axios.AxiosInstance | undefined = undefined
-// ): Promise<{
-//   data: MarkAllNotificationsAsReadMutation | null;
-//   error: Error | null;
-// }> => {
-//   try {
-//     if (!client) client = graphqlClient;
-//     const response = await client.post<{
-//       data?: MarkAllNotificationsAsReadMutation;
-//       errors?: Array<{ message: string }>;
-//     }>("", {
-//       query: print(MarkAllNotificationsAsReadDocument),
-//     });
-//     return { data: response.data?.data || null, error: null };
-//   } catch (err) {
-//     return { data: null, error: err as Error };
-//   }
-// };
+export const MarkAllNotificationsAsRead = async (
+  client: Axios.AxiosInstance | undefined = undefined
+): Promise<{
+  data: MarkAllNotificationsAsReadMutation | null;
+  error: Error | null;
+}> => {
+  try {
+    if (!client) client = graphqlClient;
+    const response = await client.post<{
+      data?: MarkAllNotificationsAsReadMutation;
+      errors?: Array<{ message: string }>;
+    }>("", {
+      query: print(MarkAllNotificationsAsReadDocument),
+    });
+    return { data: response.data?.data || null, error: null };
+  } catch (err) {
+    return { data: null, error: err as Error };
+  }
+};
+
+export const DeleteNotification = async (
+  notificationId: string,
+  client: Axios.AxiosInstance | undefined = undefined
+): Promise<{
+  data: DeleteNotificationMutation | null;
+  error: Error | null;
+}> => {
+  try {
+    if (!client) client = graphqlClient;
+    const response = await client.post<{
+      data?: DeleteNotificationMutation;
+      errors?: Array<{ message: string }>;
+    }>("", {
+      query: print(DeleteNotificationDocument),
+      variables: { id: notificationId },
+    });
+    return { data: response.data?.data || null, error: null };
+  } catch (err) {
+    return { data: null, error: err as Error };
+  }
+};

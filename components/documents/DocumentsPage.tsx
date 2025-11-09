@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+
 import { Plus, Upload } from 'lucide-react';
 import FolderTree from "@/components/documents/FolderTree";
 import FolderView from "@/components/documents/FolderView";
@@ -120,7 +120,7 @@ export default function DocumentsPage() {
   const handleFolderClick = async (folder: Folder) => {
     try {
       setLoading(true);
-      
+
       // Only fetch files if this is a real folder (not the root)
       if (folder.id !== 'root') {
         const filesResult = await getFiles(folder.id);
@@ -189,7 +189,7 @@ export default function DocumentsPage() {
   const handleBreadcrumbClick = async (folder: Folder) => {
     try {
       setLoading(true);
-      
+
       // Only fetch files if this is a real folder (not the root)
       if (folder.id !== 'root') {
         const filesResult = await getFiles(folder.id);
@@ -377,7 +377,6 @@ export default function DocumentsPage() {
 
 
 
-  const openCreateFolder = () => setIsFolderModalOpen(true);
   const closeCreateFolder = () => setIsFolderModalOpen(false);
   const openUploadDrawer = () => setIsUploadDrawerOpen(true);
   const closeUploadDrawer = () => setIsUploadDrawerOpen(false);
@@ -481,38 +480,65 @@ export default function DocumentsPage() {
   };
 
   const handleUploadFiles = async (files: FileList, folderId: string) => {
-    const newFiles: File[] = Array.from(files).map((file) => ({
-      id: Math.random().toString(36).substring(2, 9),
-      name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
-      type: 'file',
-      size: file.size,
-      mimeType: file.type || 'application/octet-stream',
-      extension: file.name.split('.').pop() || '',
-      folderId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      url: URL.createObjectURL(file), // Create blob URL for preview
-    }));
+    try {
+      setLoading(true);
 
-    let updatedFileSystem = fileSystem;
-    newFiles.forEach((file) => {
-      updatedFileSystem = upsertChild(updatedFileSystem, folderId, file);
-    });
+      // Fetch files from backend API to get the actual uploaded files
+      if (folderId !== 'root') {
+        const filesResult = await getFiles(folderId);
+        if (filesResult.error) {
+          throw new Error(filesResult.error.message);
+        }
 
-    setFileSystem(updatedFileSystem);
+        const apiFiles = filesResult.data?.files?.items || [];
 
-    // Update current folder if it's the target
-    if (currentFolder.id === folderId) {
-      const updatedCurrentFolder = findFolderById(updatedFileSystem, folderId);
-      if (updatedCurrentFolder) {
-        setCurrentFolder(updatedCurrentFolder);
+        // Map API files to our File type
+        const backendFiles: File[] = apiFiles.map(file => ({
+          id: file.id,
+          name: file.name,
+          type: 'file' as const,
+          size: file.size || 0,
+          mimeType: file.mimeType || 'application/octet-stream',
+          extension: file.name.split('.').pop() || '',
+          folderId: folderId,
+          createdAt: file.createdAt,
+          updatedAt: file.updatedAt,
+          url: '', // Will be generated when needed
+        }));
+
+        // Update the folder with files from backend (replace all files, keep folders)
+        const updatedFolder: Folder = {
+          ...currentFolder,
+          children: [
+            ...(currentFolder.children || []).filter(child => child.type === 'folder'),
+            ...backendFiles
+          ]
+        };
+
+        // Update the file system with the folder containing files
+        const updatedFileSystem = updateFolder(fileSystem, updatedFolder);
+        setFileSystem(updatedFileSystem);
+        setCurrentFolder(updatedFolder);
+
+        pushToast({
+          message: `Files refreshed successfully`,
+          type: 'success',
+        });
+      } else {
+        pushToast({
+          message: `${files.length} file(s) uploaded successfully`,
+          type: 'success',
+        });
       }
+    } catch (error) {
+      console.error('Error refreshing files after upload:', error);
+      pushToast({
+        message: 'Files uploaded but failed to refresh file list',
+        type: 'warning',
+      });
+    } finally {
+      setLoading(false);
     }
-
-    pushToast({
-      message: `${newFiles.length} file(s) uploaded successfully`,
-      type: 'success',
-    });
   };
 
 
@@ -644,15 +670,6 @@ export default function DocumentsPage() {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Documents
                   </h2>
-                  {!isUserRole && (
-                    <button
-                      onClick={openCreateFolder}
-                      className="inline-flex items-center gap-2 rounded-full border border-blue-500/40 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-300 transition-colors hover:bg-blue-500/20"
-                      aria-label="Create nested folder"
-                    >
-                      <Plus className="w-4 h-4" /> Add folder
-                    </button>
-                  )}
                 </div>
                 <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 p-4 max-h-[420px] overflow-y-auto shadow-inner">
                   <FolderTree
@@ -674,7 +691,7 @@ export default function DocumentsPage() {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {currentFolder.name}
                   </h2>
-                  {!isUserRole && (
+                  {!isUserRole && currentFolder.id !== 'root' && (
                     <div className="flex items-center gap-3">
                       <button
                         onClick={openUploadDrawer}

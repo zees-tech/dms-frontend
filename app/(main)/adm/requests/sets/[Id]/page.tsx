@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -8,51 +8,53 @@ import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Edit, FileText } from 'lucide-react';
 import Link from 'next/link';
 import RequestDetailView from '@/components/request/RequestDetailView';
+import { GetPendingRequests } from '@/apiComponent/graphql/request';
+import { Request } from '@/apiComponent/graphql/generated/graphql';
 
-interface Request {
-  id: string;
-  fileId: string;
-  file: {
-    pathName: string;
-    name: string;
-    parentId: string;
-    contentUrl: string;
-    description: string;
-    size: number;
-    mimeType: string;
-    expiry: string;
-    id: string;
-  };
-  targetUser: {
-    id: string;
-    name: string;
-    email: string;
-    roleId: string;
-    departmentId: string;
-    managerId: string;
-  };
-  status: 'draft' | 'submitted' | 'in_review' | 'approved' | 'rejected' | 'completed';
-  description: string;
-  workflowId: string;
-  workflowName: string;
-  submittedAt: string;
-  completedAt: string | null;
-  currentStep: number;
-  totalSteps: number;
-  steps: RequestStep[];
-}
+// interface Request {
+//   id: string;
+//   fileId: string;
+//   file: {
+//     pathName: string;
+//     name: string;
+//     parentId: string;
+//     contentUrl: string;
+//     description: string;
+//     size: number;
+//     mimeType: string;
+//     expiry: string;
+//     id: string;
+//   };
+//   targetUser: {
+//     id: string;
+//     name: string;
+//     email: string;
+//     roleId: string;
+//     departmentId: string;
+//     managerId: string;
+//   };
+//   status: 'draft' | 'submitted' | 'in_review' | 'approved' | 'rejected' | 'completed';
+//   description: string;
+//   workflowId: string;
+//   workflowName: string;
+//   submittedAt: string;
+//   completedAt: string | null;
+//   currentStep: number;
+//   totalSteps: number;
+//   steps: RequestStep[];
+// }
 
-interface RequestStep {
-  id: string;
-  stepNumber: number;
-  stepName: string;
-  status: 'pending' | 'approved' | 'rejected' | 'expired';
-  assignedToId: string;
-  assignedToName: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  comments: string | null;
-}
+// interface RequestStep {
+//   id: string;
+//   stepNumber: number;
+//   stepName: string;
+//   status: 'pending' | 'approved' | 'rejected' | 'expired';
+//   assignedToId: string;
+//   assignedToName: string;
+//   startedAt: string | null;
+//   completedAt: string | null;
+//   comments: string | null;
+// }
 
 export default function RequestSetDetailPage() {
   const params = useParams();
@@ -63,88 +65,36 @@ export default function RequestSetDetailPage() {
   const { pushToast } = useToast();
   const { isDark } = useTheme();
 
-  useEffect(() => {
-    loadRequest();
-  }, [requestId]);
+  const loadRequest = useCallback(async () => {
+    if (!requestId) {
+      setLoading(false);
+      setRequest(null);
+      return;
+    }
 
-  const loadRequest = async () => {
     try {
-      // Mock data for demonstration - replace with actual API call
-      const mockRequest: Request = {
-        id: requestId,
-        fileId: 'file-1',
-        file: {
-          pathName: '/documents/project-plan.docx',
-          name: 'Project Plan - Phase 2',
-          parentId: 'folder-1',
-          contentUrl: 'https://example.com/file1',
-          description: 'Detailed project plan for phase 2',
-          size: 1048576,
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          expiry: '2024-12-31',
-          id: 'file-1'
-        },
-        targetUser: {
-          id: 'user-2',
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@company.com',
-          roleId: 'user',
-          departmentId: 'dept-2',
-          managerId: 'manager-2'
-        },
-        status: 'in_review',
-        description: 'Request for Sarah to review project plan for phase 2 implementation. This includes timeline, resource allocation, and budget considerations.',
-        workflowId: 'workflow-1',
-        workflowName: 'Document Review',
-        submittedAt: '2024-11-01T09:00:00Z',
-        completedAt: null,
-        currentStep: 2,
-        totalSteps: 3,
-        steps: [
-          {
-            id: 'step-1',
-            stepNumber: 1,
-            stepName: 'Initial Review',
-            status: 'approved',
-            assignedToId: 'reviewer-1',
-            assignedToName: 'Mike Wilson',
-            startedAt: '2024-11-01T10:00:00Z',
-            completedAt: '2024-11-01T14:00:00Z',
-            comments: 'Document structure looks good. Ready for technical review.'
-          },
-          {
-            id: 'step-2',
-            stepNumber: 2,
-            stepName: 'Technical Review',
-            status: 'pending',
-            assignedToId: 'tech-1',
-            assignedToName: 'Sarah Johnson',
-            startedAt: '2024-11-01T14:00:00Z',
-            completedAt: null,
-            comments: null
-          },
-          {
-            id: 'step-3',
-            stepNumber: 3,
-            stepName: 'Final Approval',
-            status: 'pending',
-            assignedToId: 'manager-1',
-            assignedToName: 'Robert Davis',
-            startedAt: null,
-            completedAt: null,
-            comments: null
-          }
-        ]
-      };
-      
-      setRequest(mockRequest);
+      const { data, error } = await GetPendingRequests(0, 1, { id: { eq: requestId } });
+      if (error) throw error;
+
+      if (data?.pendingRequests?.items && data.pendingRequests.items.length > 0) {
+        setRequest(data.pendingRequests.items[0] as Request);
+      } else {
+        setRequest(null);
+        pushToast({ message: 'Request not found', type: 'error' });
+      }
     } catch (error) {
       pushToast({ message: 'Failed to load request details', type: 'error' });
       console.error('Error loading request:', error);
+      setRequest(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [requestId, pushToast]);
+
+  useEffect(() => {
+    loadRequest();
+  }, [requestId, loadRequest]);
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -215,19 +165,10 @@ export default function RequestSetDetailPage() {
     );
   }
 
-  const handleDownload = () => {
-    // TODO: Implement download functionality
-    pushToast({ message: 'Downloading document...', type: 'info' });
-  };
-
-  const handleSubmit = () => {
-    // TODO: Implement submit functionality
-    pushToast({ message: 'Request submitted successfully', type: 'success' });
-  };
-
-  const handleCancel = () => {
-    // TODO: Implement cancel functionality
-    pushToast({ message: 'Request cancelled', type: 'warning' });
+  const handleRequestProcessed = () => {
+    // Reload the request data after processing
+    loadRequest();
+    pushToast({ message: 'Request processed successfully', type: 'success' });
   };
 
   return (
@@ -250,7 +191,7 @@ export default function RequestSetDetailPage() {
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
             {getStatusText(request.status)}
           </span>
-          {request.status === 'draft' && (
+          {request.status === 'DRAFT' && (
             <button className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700">
               <Edit className="w-4 h-4" />
               <span>Edit</span>
@@ -261,9 +202,7 @@ export default function RequestSetDetailPage() {
 
       <RequestDetailView
         request={request}
-        onDownload={handleDownload}
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
+        onRequestProcessed={handleRequestProcessed}
       />
     </div>
   );

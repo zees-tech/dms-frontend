@@ -1,4 +1,5 @@
 import { print } from "graphql";
+import axios from "axios";
 import {
   GetPendingRequestsDocument,
   GetPendingRequestsQuery,
@@ -8,6 +9,7 @@ import {
   GetRequestFlowQuery,
   ProcessRequestDocument,
   ProcessRequestMutation,
+  RequestStatus,
 } from "./generated/graphql";
 import { graphqlClient } from "../../utils/client";
 
@@ -16,7 +18,7 @@ export const GetPendingRequests = async (
   take: number,
   filter: RequestFilterInput | null = null,
   order: RequestSortInput | null = null,
-  client: Axios.AxiosInstance | undefined = undefined
+  client: ReturnType<typeof axios.create> | undefined = undefined
 ): Promise<{ data: GetPendingRequestsQuery | null; error: Error | null }> => {
   try {
     if (!client) client = graphqlClient;
@@ -25,7 +27,7 @@ export const GetPendingRequests = async (
       errors?: Array<{ message: string }>;
     }>("", {
       query: print(GetPendingRequestsDocument),
-      variables: { skip, take, filter, order },
+      variables: { skip, take, where: filter, order },
     });
     return { data: response.data?.data || null, error: null };
   } catch (err) {
@@ -34,7 +36,7 @@ export const GetPendingRequests = async (
 };
 
 export const GetRequestFlow = async (
-  client: Axios.AxiosInstance | undefined = undefined
+  client: ReturnType<typeof axios.create> | undefined = undefined
 ): Promise<{ data: GetRequestFlowQuery | null; error: Error | null }> => {
   try {
     if (!client) client = graphqlClient;
@@ -52,20 +54,65 @@ export const GetRequestFlow = async (
 
 export const ProcessRequest = async (
   requestId: string,
-  action: "approve" | "reject",
+  action: "approve" | "reject" | "cancel",
   comments: string | null = null,
   reason: string | null = null,
-  client: Axios.AxiosInstance | undefined = undefined
+  client: ReturnType<typeof axios.create> | undefined = undefined
 ): Promise<{ data: ProcessRequestMutation | null; error: Error | null }> => {
   try {
     if (!client) client = graphqlClient;
+
+    // Map action strings to RequestStepStatus enum values
+    const actionMap: Record<"approve" | "reject" | "cancel", RequestStatus> = {
+      approve: RequestStatus.Approved,
+      reject: RequestStatus.Rejected,
+      cancel: RequestStatus.Archived,
+    };
 
     const response = await client.post<{
       data?: ProcessRequestMutation;
       errors?: Array<{ message: string }>;
     }>("", {
       query: print(ProcessRequestDocument),
-      variables: { requestId, action, comments, reason },
+      variables: {
+        requestId,
+        action: actionMap[action],
+        comments,
+        reason
+      },
+    });
+    return {
+      data: response.data?.data || null,
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: err as Error };
+  }
+};
+
+
+export const ChangeRequested = async (
+  requestId: string,
+  comments: string | null = null,
+  reason: string | null = null,
+  client: ReturnType<typeof axios.create> | undefined = undefined
+): Promise<{ data: ProcessRequestMutation | null; error: Error | null }> => {
+  try {
+    if (!client) client = graphqlClient;
+
+    // Map action strings to RequestStepStatus enum values
+   
+    const response = await client.post<{
+      data?: ProcessRequestMutation;
+      errors?: Array<{ message: string }>;
+    }>("", {
+      query: print(ProcessRequestDocument),
+      variables: {
+        requestId,
+        action: RequestStatus.ChangesRequested,
+        comments,
+        reason
+      },
     });
     return {
       data: response.data?.data || null,

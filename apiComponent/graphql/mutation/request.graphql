@@ -1,6 +1,6 @@
 mutation ProcessRequest(
   $requestId: UUID!
-  $action: RequestStepStatus!
+  $action: RequestStatus!
   $comments: String
   $reason: String
 ) {

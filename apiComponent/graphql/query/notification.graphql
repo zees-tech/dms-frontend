@@ -16,7 +16,10 @@ query GetMyNotifications(
       actionUrl
       expiresAt
       readAt
+      createdAt
+      updatedAt
       metadata
+      for
     }
     pageInfo {
       hasNextPage

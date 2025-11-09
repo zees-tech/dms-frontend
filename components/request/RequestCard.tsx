@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { User, FileText, Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/contexts/ThemeContext';
 import { colorSchemes } from '@/lib/theme';
 import { RequestStatus } from '@/apiComponent/graphql/generated/graphql';
+import { ProcessRequest } from '@/apiComponent/graphql/request';
+import RequestActionModal from './RequestActionModal';
 
 interface RequestCardProps {
   id: string;
@@ -18,8 +21,7 @@ interface RequestCardProps {
   description: string;
   submittedAt: string;
   type: 'incoming' | 'outgoing';
-  currentStep?: number;
-  totalSteps?: number;
+  onRequestProcessed?: () => void;
 }
 
 export default function RequestCard({
@@ -34,11 +36,13 @@ export default function RequestCard({
   type,
   targetUserName,
   targetUserEmail,
-  currentStep = 1,
-  totalSteps = 1
+  onRequestProcessed
 }: RequestCardProps) {
   const { colorScheme, isDark } = useTheme();
   const colors = colorSchemes[colorScheme];
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | null>(null);
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -104,11 +108,52 @@ export default function RequestCard({
     }
   };
 
-  const getProgressPercentage = (currentStep: number, totalSteps: number) => {
-    return Math.round((currentStep / totalSteps) * 100);
+  const handleOpenActionModal = (action: 'approve' | 'reject') => {
+    setCurrentAction(action);
+    setIsActionModalOpen(true);
   };
 
-  const detailUrl = type === 'incoming' 
+  const handleCloseActionModal = () => {
+    if (!isProcessing) {
+      setIsActionModalOpen(false);
+      setCurrentAction(null);
+    }
+  };
+
+  const handleSubmitAction = async (comment: string) => {
+    if (isProcessing || !currentAction) return;
+
+    setIsProcessing(true);
+
+    try {
+      const { data, error } = await ProcessRequest(
+        id,
+        currentAction,
+        comment || null,
+        currentAction === 'reject' ? comment || null : null
+      );
+
+      if (error) {
+        console.error(`Failed to ${currentAction} request:`, error);
+        alert(`Failed to ${currentAction} request. Please try again.`);
+        return;
+      }
+
+      if (data?.processRequest) {
+        onRequestProcessed?.();
+        handleCloseActionModal();
+      }
+    } catch (error) {
+      console.error(`Error ${currentAction}ing request:`, error);
+      alert(`An error occurred while ${currentAction}ing the request.`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+
+
+  const detailUrl = type === 'incoming'
     ? `/adm/requests/gets/${id}`
     : `/adm/requests/sets/${id}`;
 
@@ -128,7 +173,7 @@ export default function RequestCard({
               </span>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
             <div className="flex items-center space-x-2">
               <User className="w-4 h-4 text-gray-400" />
@@ -155,21 +200,7 @@ export default function RequestCard({
         </div>
       </div>
 
-      {/* Progress Bar for outgoing requests */}
-      {type === 'outgoing' && status !== 'DRAFT' && status !== 'COMPLETED' && status !== 'REJECTED' && (
-        <div className="mt-4">
-          <div className={`flex justify-between text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'} mb-2`}>
-            <span>Progress</span>
-            <span>Step {currentStep} of {totalSteps}</span>
-          </div>
-          <div className={`w-full ${isDark ? 'bg-gray-600' : 'bg-gray-200'} rounded-full h-2`}>
-            <div 
-              className={`${colors.primary.split(' ')[0]} h-2 rounded-full transition-all duration-300`}
-              style={{ width: `${getProgressPercentage(currentStep, totalSteps)}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
+
 
       {/* Actions */}
       <div className={`flex justify-between items-center mt-4 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -185,10 +216,20 @@ export default function RequestCard({
           </Link>
           {type === 'incoming' && status === 'PENDING_REVIEW' && (
             <>
-              <button className="text-green-600 hover:text-green-700 text-sm font-medium">
+              <button
+                onClick={() => handleOpenActionModal('approve')}
+                disabled={isProcessing}
+                className={`text-sm font-medium ${isProcessing ? 'text-green-400 cursor-not-allowed' : 'text-green-600 hover:text-green-700'
+                  }`}
+              >
                 Approve
               </button>
-              <button className="text-red-600 hover:text-red-700 text-sm font-medium">
+              <button
+                onClick={() => handleOpenActionModal('reject')}
+                disabled={isProcessing}
+                className={`text-sm font-medium ${isProcessing ? 'text-red-400 cursor-not-allowed' : 'text-red-600 hover:text-red-700'
+                  }`}
+              >
                 Reject
               </button>
             </>
@@ -200,6 +241,17 @@ export default function RequestCard({
           )}
         </div>
       </div>
+
+      {/* Request Action Modal */}
+      {currentAction && (
+        <RequestActionModal
+          isOpen={isActionModalOpen}
+          onClose={handleCloseActionModal}
+          onSubmit={handleSubmitAction}
+          action={currentAction}
+          isLoading={isProcessing}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,40 @@
+#File mutation inputs
+input CreateFileInput {
+  name: String!
+  parentId: UUID!
+  contentUrl: String!
+  description: String
+  size: Long = 0
+  mimeType: String
+  expiry: DateTime
+}
+
+input UpdateFileInput {
+  id: UUID!
+  name: String
+  description: String
+  contentUrl: String
+  size: Long
+  versionDescription: String
+  expiry: DateTime
+}
+
+input CreateFileVersionInput {
+  fileId: UUID!
+  contentUrl: String!
+  size: Long!
+  description: String
+}
+
+# Folder mutation inputs
+input CreateFolderInput {
+  name: String!
+  description: String
+  parentId: UUID
+}
+
+input UpdateFolderInput {
+  id: UUID!
+  name: String
+  description: String
+}

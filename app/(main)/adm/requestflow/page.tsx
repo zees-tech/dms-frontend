@@ -133,7 +133,7 @@ export default function RequestFlowPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-2">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className={`text-2xl font-bold ${themeColors.textPrimary}`}>Request Flows</h1>
@@ -158,7 +158,7 @@ export default function RequestFlowPage() {
             allowDelegation={workflow.allowDelegation}
             status={workflow.isActive ? 'active' : 'inactive'}
             steps={workflow.steps}
-            onToggleStatus={(workflowId, currentStatus) => toggleWorkflowStatus(workflowId, currentStatus === 'active')}
+            onToggleStatus={(workflowId: string, currentStatus: string) => toggleWorkflowStatus(workflowId, currentStatus === 'active')}
             onDelete={deleteWorkflow}
           />
         ))}

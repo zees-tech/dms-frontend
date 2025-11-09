@@ -1,5 +1,6 @@
 import { login } from "@/apiComponent/rest/login";
-import { User, LoginResponse } from "@/types/auth";
+import { register as registerAPI } from "@/apiComponent/rest/register";
+import { User, LoginResponse, UserRole } from "@/types/auth";
 
 export interface AuthState {
     user: User | null;
@@ -31,53 +32,27 @@ export const authService = {
     },
 
     async getCurrentUser(): Promise<User | null> {
-        const token = localStorage.getItem('auth-token');
-
-        if (!token) {
-            return null;
-        }
-
-        try {
-            const response = await fetch('/api/auth', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) {
-                localStorage.removeItem('auth-token');
-                return null;
-            }
-
-            const data = await response.json();
-            return data.user;
-        } catch (error) {
+        // Get user from stored login response instead of calling API
+        const storedResponse = this.getStoredLoginResponse();
+        
+        if (!storedResponse || !storedResponse.user) {
+            // Clean up if data is invalid
             localStorage.removeItem('auth-token');
             localStorage.removeItem('auth-response');
             return null;
         }
+
+        // Return the user from stored response
+        return storedResponse.user;
     },
 
-    async register(email: string, password: string): Promise<User> {
-        const response = await fetch('/api/auth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password, action: 'register' }),
-        });
+    async register(email: string, password: string, name: string, departmentName: string, roleName: string): Promise<void> {
+        const role = roleName.toLowerCase() as UserRole; // Convert to lowercase to match UserRole type
+        const department = departmentName || null;
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Registration failed');
-        }
+        await registerAPI(name, email, password, role, department);
 
-        const data = await response.json();
-
-        // Store token in localStorage
-        localStorage.setItem('auth-token', data.token);
-
-        return data.user;
+        // Don't store auth data - user needs to login manually after registration
     },
 
     // Get the complete stored API response

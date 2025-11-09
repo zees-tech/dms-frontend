@@ -246,7 +246,8 @@ export async function completeUpload(
     expirationDate?: string;
     isSecret?: boolean;
     password?: string;
-  }
+  },
+  fileId: string | null = null
 ): Promise<UploadCompleteResponse> {
   try {
     const client = await createServerClient(
@@ -254,18 +255,26 @@ export async function completeUpload(
       token,
       refresh_token || "",
       ""
-    ); folderId = folderId;
-    const response = await client.post<UploadCompleteResponse>(
-      "/upload/complete",
-      {
-        fileKey,
-        originalFileName,
-        fileSize,
-        contentType,
-        folderId,
-        documentSettings,
-      }
     );
+    folderId = folderId;
+    const response = fileId
+      ? await client.patch<UploadCompleteResponse>("/upload/complete", {
+          fileId,
+          fileKey,
+          originalFileName,
+          fileSize,
+          contentType,
+          folderId,
+          documentSettings,
+        })
+      : await client.post<UploadCompleteResponse>("/upload/complete", {
+          fileKey,
+          originalFileName,
+          fileSize,
+          contentType,
+          folderId,
+          documentSettings,
+        });
 
     return response.data;
   } catch (error: unknown) {

@@ -5,6 +5,7 @@ import { AuthState, authService } from '@/lib/auth';
 
 interface AuthContextType extends AuthState {
     login: (email: string, password: string) => Promise<void>;
+    register: (email: string, password: string, name: string, departmentName: string, roleName: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -51,6 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const register = async (email: string, password: string, name: string, departmentName: string, roleName: string) => {
+        try {
+            await authService.register(email, password, name, departmentName, roleName);
+            // Don't automatically authenticate after registration
+            // User needs to login manually
+        } catch (error) {
+            throw error;
+        }
+    };
+
     const logout = async () => {
         try {
             await authService.logout();
@@ -65,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ ...authState, login, logout }}>
+        <AuthContext.Provider value={{ ...authState, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );
