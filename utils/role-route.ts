@@ -3,10 +3,10 @@ export const getRolePrefix = (role: string, route?: string): string => {
   let prefix = "";
   switch (role) {
     case "admin":
-      prefix = "adm";
+      prefix = "";
       break;
     case "systemAdmin":
-      prefix = "sysadm";
+      prefix = "";
       break;
     case "user":
       prefix = "";

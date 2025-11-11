@@ -12,6 +12,7 @@ import UserForm from "./ui/UserForm";
 import DepartmentForm from "./ui/DepartmentForm";
 import { GetUsers } from "@/apiComponent/graphql/user";
 import { getClientRoles } from "@/apiComponent/graphql/role";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Type definitions
 interface User {
@@ -41,7 +42,7 @@ export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form] = Form.useForm();
-
+  const { user } = useAuth();
   // const [assignees, setAssignees] = useState<GraphQLAssigneeInfo[]>([]);
 
   const [skip, setSkip] = useState(0);
@@ -340,7 +341,7 @@ export default function UsersPage() {
             ))}
           </div>
         </div>
-        {activeTab !== "access-control" && (
+        {user?.role === "admin" && (
           <button
             onClick={() => openModal()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"

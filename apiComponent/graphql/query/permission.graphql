@@ -50,3 +50,16 @@ query PermissionList(
     totalCount
   }
 }
+
+query HasPermissions(
+  $entityId: UUID!
+  $_for: PermissionType!
+  $where: PermissionFilterInput
+) {
+  hasPermissions(entityId: $entityId, _for: $_for, where: $where) {
+    name
+    allowed
+    description
+    _For
+  }
+}

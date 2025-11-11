@@ -1,5 +1,7 @@
-import DocumentsPage from '@/components/documents/DocumentsPage';
+'use client';
+
+import DocumentsPage from "@/components/documents/DocumentsPage";
 
 export default function Page() {
-    return <DocumentsPage />;
+  return <DocumentsPage />;
 }
