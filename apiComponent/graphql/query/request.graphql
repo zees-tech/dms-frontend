@@ -24,7 +24,15 @@ query GetPendingRequests(
         name
         email
         roleId
+        role{
+          id
+          name
+        }
         departmentId
+        department{
+          id
+          name
+        }
         managerId
       }
       workflow{

@@ -48,9 +48,13 @@ export default function Sidebar() {
             // Admin can access all features
             return true;
         }
+         if (userRole === 'coordinator') {
+            // Admin can access all features
+            return true;
+        }
         if (userRole === 'user') {
             // User can access basic features, no admin settings
-            return item.name !== 'Settings' && item.name !== 'Users';
+            return item.name === 'Documents' || item.name === 'Settings';
         }
         return false;
     });

@@ -8,6 +8,7 @@ import { FileText, User, Calendar, Clock, CheckCircle, XCircle, Eye } from 'luci
 import Link from 'next/link';
 import { GetPendingRequests } from '@/apiComponent/graphql/request';
 import { Request, RequestStatus } from '@/apiComponent/graphql/generated/graphql';
+import { getRolePrefix } from '@/utils/role-route';
 
 // Define a type for the partial request data that matches what the GraphQL query returns
 type PartialRequest = Pick<Request,
@@ -223,7 +224,7 @@ export default function RequestSetsPage() {
                   <td className={`sticky right-0 px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'bg-gray-800 group-hover:bg-gray-700' : 'bg-white group-hover:bg-gray-50'} border-l ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                     <div className="flex items-center space-x-3">
                       <Link
-                        href={`/adm/requests/sets/${request.id}`}
+                        href={`${getRolePrefix(user?.role??'')}/requests/sets/${request.id}`}
                         className="text-blue-600 hover:text-blue-900 flex items-center"
                       >
                         <Eye className="w-4 h-4 mr-1" />

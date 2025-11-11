@@ -10,6 +10,7 @@ import Link from 'next/link';
 import RequestDetailView from '@/components/request/RequestDetailView';
 import { GetPendingRequests } from '@/apiComponent/graphql/request';
 import { Request } from '@/apiComponent/graphql/generated/graphql';
+import { getRolePrefix } from '@/utils/role-route';
 
 // interface Request {
 //   id: string;
@@ -156,7 +157,7 @@ export default function RequestSetDetailPage() {
         <h3 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-900'} mb-2`}>Request not found</h3>
         <p className={`mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>The requested request could not be found.</p>
         <Link
-          href="/adm/requests/sets"
+          href={`${getRolePrefix}/requests/sets`}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
         >
           Back to Requests

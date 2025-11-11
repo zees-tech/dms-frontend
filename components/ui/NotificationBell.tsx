@@ -93,7 +93,7 @@ export default function NotificationBell() {
             // Mark notification as read and refresh
             await markAsRead(notification.id);
             // Optionally refresh notifications
-            router.push(`/${rolePrefix}/${notification.actionUrl}`);
+            router.push(`${rolePrefix}${notification.actionUrl}`);
 
             // if (data?.processRequest) {
             //     // Mark notification as read and refresh

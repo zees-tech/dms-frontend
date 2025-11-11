@@ -9,51 +9,8 @@ import { ProcessRequest, ChangeRequested } from '@/apiComponent/graphql/request'
 import DocumentPreview from './DocumentPreview';
 import RequestActionModal from './RequestActionModal';
 import { smartDownloadFile } from '@/apiComponent/rest/fileDownload';
-
-// interface Request {
-//   id: string;
-//   fileId: string;
-//   file: {
-//     pathName: string;
-//     name: string;
-//     parentId: string;
-//     contentUrl: string;
-//     description: string;
-//     size: number;
-//     mimeType: string;
-//     expiry: string;
-//     id: string;
-//   };
-//   targetUser: {
-//     id: string;
-//     name: string;
-//     email: string;
-//     roleId: string;
-//     departmentId: string;
-//     managerId: string;
-//   };
-//   status: 'draft' | 'submitted' | 'in_review' | 'approved' | 'rejected' | 'completed';
-//   description: string;
-//   workflowId: string;
-//   workflowName: string;
-//   submittedAt: string;
-//   completedAt: string | null;
-//   currentStep: number;
-//   totalSteps: number;
-//   steps: RequestStep[];
-// }
-
-// interface RequestStep {
-//   id: string;
-//   stepNumber: number;
-//   stepName: string;
-//   status: 'pending' | 'approved' | 'rejected' | 'expired';
-//   assignedToId: string;
-//   assignedToName: string;
-//   startedAt: string | null;
-//   completedAt: string | null;
-//   comments: string | null;
-// }
+import { getRolePrefix } from '@/utils/role-route';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface RequestDetailViewProps {
   request: Request;
@@ -66,6 +23,7 @@ export default function RequestDetailView({
 }: RequestDetailViewProps) {
   const { isDark } = useTheme();
   const router = useRouter();
+  const { user } = useAuth();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit' | null>(null);
@@ -137,7 +95,7 @@ export default function RequestDetailView({
         onRequestProcessed?.();
         handleCloseActionModal();
         // Redirect to requests page after successful processing
-        router.push('/adm/requests/gets');
+        router.push(`${getRolePrefix(user?.role ?? '')}/requests/sets`);
       }
     } catch (error) {
       console.error(`Error ${currentAction}ing request:`, error);
@@ -200,7 +158,7 @@ export default function RequestDetailView({
           {
             request.user && (
               <div className={`rounded-lg border p-6 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Target User</h2>
+                <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>New User</h2>
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                     <User className="w-6 h-6 text-blue-600" />
@@ -208,6 +166,8 @@ export default function RequestDetailView({
                   <div>
                     <div className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{request.user.name}</div>
                     <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{request.user.email}</div>
+                    <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Role: {request.user.role?.name.toUpperCase()}</div>
+                    <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Department: {request.user.department?.name.toUpperCase()}</div>
                     <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>User ID: {request.user.id}</div>
                   </div>
                 </div>
@@ -344,7 +304,7 @@ export default function RequestDetailView({
                   <CheckCircle className="w-4 h-4" />
                   <span>Approve Request</span>
                 </button>
-                <button
+                {(request.file && <button
                   onClick={() => handleOpenActionModal('request-change')}
                   disabled={isProcessing}
                   className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-yellow-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
@@ -352,7 +312,7 @@ export default function RequestDetailView({
                 >
                   <Edit className="w-4 h-4" />
                   <span>Request Change</span>
-                </button>
+                </button>)}
                 <button
                   onClick={() => handleOpenActionModal('reject')}
                   disabled={isProcessing}

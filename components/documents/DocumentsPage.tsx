@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { Plus, Upload } from 'lucide-react';
 import FolderTree from "@/components/documents/FolderTree";
@@ -16,6 +16,7 @@ import { getFolders, createFolder } from "@/apiComponent/graphql/folder";
 import { getFiles } from "@/apiComponent/graphql/file";
 import { smartDownloadFile, getPresignedDownloadUrl } from "@/apiComponent/rest/fileDownload";
 import { useStoredLoginResponse } from "@/hooks/useStoredLoginResponse";
+import { hasPermission } from "@/apiComponent/graphql/permission";
 
 // Create a root folder structure
 const createRootFolder = (): Folder => ({
@@ -37,6 +38,7 @@ export default function DocumentsPage() {
   const [isUploadDrawerOpen, setIsUploadDrawerOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [HasUpdatePermission, setHasUpdatePermission] = useState(false);
 
   const [, setLoading] = useState(true);
   const { pushToast } = useToast();
@@ -117,12 +119,35 @@ export default function DocumentsPage() {
     fetchData();
   }, [pushToast]);
 
+  const fetchFolderPermissions = async (folderId: string) => {
+    try {
+      setLoading(true);
+      const updatePermission = await hasPermission(
+        folderId,
+        'update'
+      );
+      setHasUpdatePermission(updatePermission);
+    } catch (error) {
+      console.error('Error checking folder permissions:', error);
+      pushToast({
+        message: 'Failed to verify folder permissions',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+
+
   const handleFolderClick = async (folder: Folder) => {
     try {
       setLoading(true);
 
       // Only fetch files if this is a real folder (not the root)
       if (folder.id !== 'root') {
+        await fetchFolderPermissions(folder.id);
         const filesResult = await getFiles(folder.id);
         if (filesResult.error) {
           throw new Error(filesResult.error.message);
@@ -691,7 +716,7 @@ export default function DocumentsPage() {
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {currentFolder.name}
                   </h2>
-                  {!isUserRole && currentFolder.id !== 'root' && (
+                  {HasUpdatePermission && currentFolder.id !== 'root' && (
                     <div className="flex items-center gap-3">
                       <button
                         onClick={openUploadDrawer}
