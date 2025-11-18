@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isAuthenticated: false
             });
         } catch (error) {
-            console.error('Logout error:', error);
+            // Logout error
         }
     };
 

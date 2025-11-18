@@ -38,7 +38,6 @@ export default function DocumentSettingsModal({
     const handleConfirm = () => {
         // Validate required fields
         if (hasExpiration && !expirationDate) {
-            console.error('Expiration date is required when expiration is enabled');
             return;
         }
 
@@ -48,14 +47,6 @@ export default function DocumentSettingsModal({
             isSecret,
             password: isSecret ? password : undefined
         };
-
-        console.log('Confirming settings:', settings);
-        console.log('Date format check:', {
-            originalDate: expirationDate,
-            hasExpiration,
-            dateLength: expirationDate?.length,
-            dateValid: expirationDate ? new Date(expirationDate).toString() : 'N/A'
-        });
 
         // Call onConfirm first, then close
         onConfirm(settings);
@@ -83,7 +74,6 @@ export default function DocumentSettingsModal({
     // Reset form when modal opens
     React.useEffect(() => {
         if (isOpen) {
-            console.log('Modal opened, resetting form for file:', fileName);
             setHasExpiration(false);
             setExpirationDate('');
             setIsSecret(false);
@@ -146,7 +136,6 @@ export default function DocumentSettingsModal({
                                 id="hasExpiration"
                                 checked={hasExpiration}
                                 onChange={(e) => {
-                                    console.log('Expiration checkbox changed:', e.target.checked);
                                     setHasExpiration(e.target.checked);
                                 }}
                                 className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
@@ -162,7 +151,6 @@ export default function DocumentSettingsModal({
                                     type="date"
                                     value={expirationDate}
                                     onChange={(e) => {
-                                        console.log('Expiration date changed:', e.target.value);
                                         setExpirationDate(e.target.value);
                                     }}
                                     min={today}
@@ -259,7 +247,6 @@ export default function DocumentSettingsModal({
                                     hasExpiration: false,
                                     isSecret: false
                                 };
-                                console.log('Skipping settings for this file');
                                 resetForm();
                                 onConfirm(defaultSettings);
                             }}

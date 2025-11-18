@@ -13,6 +13,7 @@ import DepartmentForm from "./ui/DepartmentForm";
 import { GetUsers } from "@/apiComponent/graphql/user";
 import { getClientRoles } from "@/apiComponent/graphql/role";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLoading } from "@/contexts/LoadingContext";
 
 // Type definitions
 interface User {
@@ -43,6 +44,7 @@ export default function UsersPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form] = Form.useForm();
   const { user } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   // const [assignees, setAssignees] = useState<GraphQLAssigneeInfo[]>([]);
 
   const [skip, setSkip] = useState(0);
@@ -57,7 +59,6 @@ export default function UsersPage() {
 
   const fetchDepartment = useCallback(async () => {
     try {
-
       const { data, error } = await GetDepartments(skip, take);
 
       if (error) {
@@ -76,8 +77,6 @@ export default function UsersPage() {
         setHasMore(data.departments.pageInfo?.hasNextPage || false);
         setTotalCount(data.departments.totalCount || 0);
       }
-
-
     } catch (err) {
       console.error('Error fetching assignees:', err);
       message.error('Failed to load assignees');
@@ -85,7 +84,6 @@ export default function UsersPage() {
   }, [skip, take]);
   const fetchRoles = useCallback(async () => {
     try {
-
       const { data, error } = await getClientRoles();
 
       if (error) {
@@ -102,7 +100,6 @@ export default function UsersPage() {
         }));
         setRoles(rolesData);
       }
-
     } catch (err) {
       console.error('Error fetching roles:', err);
       message.error('Failed to load roles');
@@ -110,7 +107,6 @@ export default function UsersPage() {
   }, []);
   const fetchUsers = useCallback(async () => {
     try {
-
       const { data, error } = await GetUsers(skip, take);
 
       if (error) {
@@ -132,8 +128,6 @@ export default function UsersPage() {
         setHasMore(data.users.pageInfo?.hasNextPage || false);
         setTotalCount(data.users.totalCount || 0);
       }
-
-
     } catch (err) {
       console.error('Error fetching assignees:', err);
       message.error('Failed to load assignees');
@@ -142,11 +136,17 @@ export default function UsersPage() {
 
   useEffect(() => {
     const fetchAllData = async () => {
-      await fetchDepartment();
-      await fetchRoles();
-      await fetchUsers();
+      showLoading('Loading users data...');
+      try {
+        await fetchDepartment();
+        await fetchRoles();
+        await fetchUsers();
+      } finally {
+        hideLoading();
+      }
     };
     fetchAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchDepartment, fetchUsers, fetchRoles]);
 
   const openModal = (item: User | Department | GraphQLAssigneeInfo | null = null) => {

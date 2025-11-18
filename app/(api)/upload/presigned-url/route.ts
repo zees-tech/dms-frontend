@@ -7,12 +7,12 @@ export async function POST(request: NextRequest) {
     // Get blob storage configuration
     const blobConfig = getBlobStorageConfig();
     validateBlobStorageConfig(blobConfig);
-    
+
     // Create blob storage service
     const blobService = BlobStorageFactory.createService(blobConfig);
 
     const body = await request.json();
-    
+
     const { fileName, folderId, fileSize, contentType } = body;
 
     // Validate required fields
@@ -56,8 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(presignedUrlResponse);
 
   } catch (error) {
-    console.error('Pre-signed URL generation error:', error);
-    
     if (error instanceof Error) {
       return NextResponse.json(
         { error: error.message },

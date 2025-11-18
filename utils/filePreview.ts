@@ -13,7 +13,6 @@ export async function isUrlAccessible(url: string): Promise<boolean> {
         });
         return response.ok;
     } catch (error) {
-        console.warn('URL accessibility check failed:', error);
         return false;
     }
 }

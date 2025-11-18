@@ -76,14 +76,6 @@ export default function FilePreview({ file, isOpen, onClose, onDownload }: FileP
     const renderPreviewContent = () => {
         const { mimeType, url, name, extension } = file;
 
-        // Debug logging
-        console.log('FilePreview - Rendering preview for:', {
-            name: `${name}.${extension}`,
-            mimeType,
-            hasUrl: !!url,
-            url: url ? url.substring(0, 100) + '...' : 'No URL'
-        });
-
         // Image preview
         if (mimeType.includes('image') && url && !imageError) {
             return (

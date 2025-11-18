@@ -104,7 +104,6 @@ export const hasPermission = async (
       false
     );
   } catch (err) {
-    console.error("Error checking permission:", err);
     return false;
   }
 };

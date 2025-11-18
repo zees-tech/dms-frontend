@@ -30,7 +30,7 @@ export default function CreateFolderModal({
             setFolderName('');
             onClose();
         } catch (error) {
-            console.error('Failed to create folder:', error);
+            // Failed to create folder
         } finally {
             setIsCreating(false);
         }

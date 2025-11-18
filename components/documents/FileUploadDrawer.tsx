@@ -91,8 +91,6 @@ export default function FileUploadDrawer({
     const handleSettingsConfirm = (settings: DocumentSettings) => {
         if (!currentConfigFile) return;
 
-        console.log('Received settings for file:', currentConfigFile.file.name, settings);
-
         // Apply settings to current file and mark as pending
         setUploadFilesState(prev =>
             prev.map(f =>
@@ -117,7 +115,6 @@ export default function FileUploadDrawer({
 
             // Auto-start upload once all files are configured
             setTimeout(() => {
-                console.log('Starting upload with configured settings...');
                 startUpload();
             }, 100);
         }
@@ -133,7 +130,6 @@ export default function FileUploadDrawer({
     };
 
     const handleSkipAllSettings = () => {
-        console.log('Skipping settings for all files');
 
         // Apply default settings to all configuring files
         const defaultSettings: DocumentSettings = {
@@ -154,7 +150,6 @@ export default function FileUploadDrawer({
 
         // Auto-start upload
         setTimeout(() => {
-            console.log('Starting upload with default settings for all files...');
             startUpload();
         }, 100);
     };
@@ -162,10 +157,7 @@ export default function FileUploadDrawer({
     const startUpload = async () => {
         const pendingFiles = uploadFilesState.filter(f => f.status === 'pending');
 
-        console.log('Starting upload for files:', pendingFiles.map(f => ({ name: f.file.name, settings: f.settings })));
-
         if (pendingFiles.length === 0) {
-            console.log('No pending files to upload');
             return;
         }
 
@@ -206,16 +198,6 @@ export default function FileUploadDrawer({
                     const refresh_token = "";
 
                     // Complete the upload by storing file metadata with settings
-                    console.log('Uploading file with settings:', uploadFile.file.name, uploadFile.settings);
-                    console.log('API call parameters:', {
-                        fileKey: presignedUrlResponse.fileKey,
-                        fileName: uploadFile.file.name,
-                        fileSize: uploadFile.file.size,
-                        contentType: uploadFile.file.type || 'application/octet-stream',
-                        folderId: currentFolder.id,
-                        settings: uploadFile.settings
-                    });
-
                     const completeResponse = await completeUpload(
                         presignedUrlResponse.fileKey,
                         uploadFile.file.name,
@@ -226,8 +208,6 @@ export default function FileUploadDrawer({
                         refresh_token,
                         uploadFile.settings
                     );
-
-                    console.log('Upload completed successfully:', completeResponse);
 
                     // Check if upload was successful
                     if (completeResponse.success) {
@@ -250,12 +230,6 @@ export default function FileUploadDrawer({
                         return { success: false, file: uploadFile.file, error: 'Upload failed: success flag is false' };
                     }
                 } catch (error) {
-                    console.error(`Upload failed for ${uploadFile.file.name}:`, error);
-                    console.error('Error details:', {
-                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-                        errorStack: error instanceof Error ? error.stack : 'No stack trace',
-                        fileSettings: uploadFile.settings
-                    });
 
                     // Mark file as failed with error message
                     setUploadFilesState(prev =>
@@ -278,7 +252,7 @@ export default function FileUploadDrawer({
                 const fileList = new DataTransfer();
                 successfulFiles.forEach(result => fileList.items.add(result.file));
                 onUploadFiles(fileList.files, currentFolder.id);
-                
+
                 // Close drawer if all uploads were successful
                 const allSuccessful = results.every(result => result.success);
                 if (allSuccessful && results.length > 0) {
@@ -292,8 +266,6 @@ export default function FileUploadDrawer({
             }
 
         } catch (error) {
-            console.error('Upload process failed:', error);
-
             // Mark all uploading files as failed
             setUploadFilesState(prev =>
                 prev.map(f =>

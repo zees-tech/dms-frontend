@@ -74,7 +74,6 @@ export class CloudflareStorageService implements BlobStorageService {
         metadata: fileMetadata,
       };
     } catch (error) {
-      console.error('Cloudflare R2 upload error:', error);
       return {
         success: false,
         fileName: file.name,
@@ -93,7 +92,6 @@ export class CloudflareStorageService implements BlobStorageService {
       await this.s3Client.send(command);
       return true;
     } catch (error) {
-      console.error('Cloudflare R2 delete error:', error);
       return false;
     }
   }
@@ -138,7 +136,6 @@ export class CloudflareStorageService implements BlobStorageService {
         expiresAt,
       };
     } catch (error) {
-      console.error('Error generating pre-signed URL:', error);
       throw new Error('Failed to generate pre-signed URL');
     }
   }

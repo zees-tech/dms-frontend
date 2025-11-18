@@ -125,7 +125,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
             const { data, error } = await GetNotifications(skip, takeCount, filter, undefined);
             if (error) {
-                console.error('Error fetching notifications:', error);
                 return;
             }
             if (data && data.myNotifications) {
@@ -148,7 +147,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
                 setCurrentSkip(skip + mappedNotifications.length);
             }
         } catch (err) {
-            console.error('Error fetching notifications:', err);
+            // Error fetching notifications
         } finally {
             setIsLoading(false);
         }
@@ -175,7 +174,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
                 prev.map(n => n.id === id ? { ...n, read: true } : n)
             );
         } catch (err) {
-            console.error('Error marking notification as read:', err);
+            // Error marking notification as read
         }
     };
 
@@ -184,7 +183,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             await MarkAllNotificationsAsRead();
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         } catch (err) {
-            console.error('Error marking all notifications as read:', err);
+            // Error marking all notifications as read
         }
     };
 
@@ -193,7 +192,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             await DeleteNotification(id);
             setNotifications(prev => prev.filter(n => n.id !== id));
         } catch (err) {
-            console.error('Error deleting notification:', err);
             // Still remove from UI even if API call fails
             setNotifications(prev => prev.filter(n => n.id !== id));
         }

@@ -63,8 +63,24 @@ export default function DocumentPreview({ file, isOpen, onClose, onDownload }: D
         // Try to get preview URL from API
         const loadPreviewUrl = async () => {
             try {
-                // First try to use existing contentUrl if available
-                if (file.contentUrl) {
+                // Check if contentUrl is valid (not containing JavaScript code or malformed)
+                const isValidUrl = (url: string) => {
+                    if (!url || url.trim() === '') return false;
+                    // Check if URL contains JavaScript code patterns
+                    if (url.includes('async') || url.includes('=>') || url.includes('await')) {
+                        return false;
+                    }
+                    // Check if it's a valid HTTP/HTTPS URL
+                    try {
+                        const urlObj = new URL(url);
+                        return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+                    } catch {
+                        return false;
+                    }
+                };
+
+                // First try to use existing contentUrl if available and valid
+                if (file.contentUrl && isValidUrl(file.contentUrl)) {
                     setPreviewUrl(file.contentUrl);
                     setLoading(false);
                     return;
@@ -72,10 +88,15 @@ export default function DocumentPreview({ file, isOpen, onClose, onDownload }: D
 
                 // Otherwise, try to get preview URL from API
                 const previewData = await getFilePreviewUrl(file.id);
+
+                // Validate the preview URL
+                if (!previewData.previewUrl || previewData.previewUrl.trim() === '') {
+                    throw new Error('Received empty preview URL from API');
+                }
+
                 setPreviewUrl(previewData.previewUrl);
                 setLoading(false);
             } catch (err) {
-                console.error('Failed to load preview URL:', err);
                 setError('Failed to load preview');
                 setLoading(false);
             }

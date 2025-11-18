@@ -99,8 +99,6 @@ export async function uploadFiles(
 
     return response.data;
   } catch (error: unknown) {
-    console.error("File upload error:", error);
-
     // Handle axios error response
     if (error && typeof error === "object" && "response" in error) {
       const axiosError = error as { response?: { data?: UploadFileError } };
@@ -156,8 +154,6 @@ export async function generatePresignedUrl(
 
     return response.data;
   } catch (error: unknown) {
-    console.error("Pre-signed URL generation error:", error);
-
     // Handle axios error response
     if (error && typeof error === "object" && "response" in error) {
       const axiosError = error as { response?: { data?: { error: string } } };
@@ -259,27 +255,25 @@ export async function completeUpload(
     folderId = folderId;
     const response = fileId
       ? await client.patch<UploadCompleteResponse>("/upload/complete", {
-          fileId,
-          fileKey,
-          originalFileName,
-          fileSize,
-          contentType,
-          folderId,
-          documentSettings,
-        })
+        fileId,
+        fileKey,
+        originalFileName,
+        fileSize,
+        contentType,
+        folderId,
+        documentSettings,
+      })
       : await client.post<UploadCompleteResponse>("/upload/complete", {
-          fileKey,
-          originalFileName,
-          fileSize,
-          contentType,
-          folderId,
-          documentSettings,
-        });
+        fileKey,
+        originalFileName,
+        fileSize,
+        contentType,
+        folderId,
+        documentSettings,
+      });
 
     return response.data;
   } catch (error: unknown) {
-    console.error("Upload completion error:", error);
-
     // Handle axios error response
     if (error && typeof error === "object" && "response" in error) {
       const axiosError = error as { response?: { data?: { error: string } } };

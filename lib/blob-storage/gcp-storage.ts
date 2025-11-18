@@ -76,7 +76,6 @@ export class GCPStorageService implements BlobStorageService {
         metadata: fileMetadata,
       };
     } catch (error) {
-      console.error('GCP Storage upload error:', error);
       return {
         success: false,
         fileName: file.name,
@@ -89,11 +88,10 @@ export class GCPStorageService implements BlobStorageService {
     try {
       const bucket = this.storage.bucket(this.bucketName);
       const file = bucket.file(key);
-      
+
       await file.delete();
       return true;
     } catch (error) {
-      console.error('GCP Storage delete error:', error);
       return false;
     }
   }
@@ -112,13 +110,13 @@ export class GCPStorageService implements BlobStorageService {
     try {
       // Generate storage key with folder structure
       const storageKey = `${folderId}/${fileName}`;
-      
+
       // Get bucket
       const bucket = this.storage.bucket(this.bucketName);
-      
+
       // Get file object
       const file = bucket.file(storageKey);
-      
+
       // Generate signed URL for upload
       const [signedUrl] = await file.getSignedUrl({
         version: 'v4',
@@ -133,7 +131,6 @@ export class GCPStorageService implements BlobStorageService {
         expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
       };
     } catch (error) {
-      console.error('GCP Storage presigned URL generation error:', error);
       throw new Error('Failed to generate presigned URL for Google Cloud Storage');
     }
   }

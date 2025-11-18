@@ -118,8 +118,6 @@ export async function POST(request: NextRequest) {
       fileMetadata,
     });
   } catch (error) {
-    console.error("Upload completion error:", error);
-
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -243,8 +241,6 @@ export async function PATCH(request: NextRequest) {
       fileMetadata,
     });
   } catch (error) {
-    console.error("Upload update error:", error);
-
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

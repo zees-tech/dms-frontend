@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
         const backendUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
         if (!backendUrl) {
-            console.error('Backend URL not configured');
             return NextResponse.json(
                 { error: 'Server configuration error' },
                 { status: 500 }
@@ -49,7 +48,6 @@ export async function GET(request: NextRequest) {
             );
 
         } catch (error) {
-            console.error('Backend validation error:', error);
             return NextResponse.json(
                 { error: 'Token validation failed' },
                 { status: 401 }
@@ -57,7 +55,6 @@ export async function GET(request: NextRequest) {
         }
 
     } catch (error) {
-        console.error('Auth validation error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
@@ -111,7 +108,6 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json(data, { status: 201 });
 
             } catch (error) {
-                console.error('Registration error:', error);
                 return NextResponse.json(
                     { error: 'Registration failed' },
                     { status: 500 }
@@ -125,7 +121,6 @@ export async function POST(request: NextRequest) {
         );
 
     } catch (error) {
-        console.error('Auth POST error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

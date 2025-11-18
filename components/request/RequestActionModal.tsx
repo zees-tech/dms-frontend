@@ -8,7 +8,7 @@ interface RequestActionModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (comment: string) => void;
-    action: 'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit';
+    action: 'approve' | 'reject' | 'request-change' | 'cancel';
     isLoading: boolean;
 }
 
@@ -57,13 +57,11 @@ export default function RequestActionModal({
                                 <XCircle className="w-6 h-6 text-red-600" />
                             ) : action === 'request-change' ? (
                                 <Edit className="w-6 h-6 text-yellow-600" />
-                            ) :  action === 'resubmit' ? (
-                                <Edit className="w-6 h-6 text-yellow-600" />
                             ) : (
                                 <XCircle className="w-6 h-6 text-red-600" />
                             )}
                             <h3 className={`text-lg font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                {action === 'approve' ? 'Approve Request' : action === 'reject' ? 'Reject Request' : action === 'request-change' ? 'Request Change': action === 'resubmit' ? 'Re-Submit Change' : 'Cancel Request'}
+                                {action === 'approve' ? 'Approve Request' : action === 'reject' ? 'Reject Request' : action === 'request-change' ? 'Request Change' : 'Cancel Request'}
                             </h3>
                         </div>
                         <button
@@ -83,7 +81,7 @@ export default function RequestActionModal({
                                 htmlFor="comment"
                                 className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
                             >
-                                {action === 'approve' ? 'Comments (optional)' : action === 'reject' ? 'Reason for rejection' :  action === 'request-change' ? 'Requested changes' : 'Reason for cancellation'}
+                                {action === 'approve' ? 'Comments (optional)' : action === 'reject' ? 'Reason for rejection' : action === 'request-change' ? 'Requested changes' : 'Reason for cancellation'}
                             </label>
                             <textarea
                                 id="comment"
@@ -137,10 +135,10 @@ export default function RequestActionModal({
                                 {isLoading ? (
                                     <>
                                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        <span>{action === 'approve' ? 'Approving...' : action === 'reject' ? 'Rejecting...' : action === 'request-change' ? 'Requesting changes...': action === 'resubmit' ? 'Re-Submit Change' : 'Cancelling...'}</span>
+                                        <span>{action === 'approve' ? 'Approving...' : action === 'reject' ? 'Rejecting...' : action === 'request-change' ? 'Requesting changes...' : 'Cancelling...'}</span>
                                     </>
                                 ) : (
-                                    <span>{action === 'approve' ? 'Approve' : action === 'reject' ? 'Reject' :  action === 'request-change' ? 'Request Change' : action === 'resubmit' ? 'Re-Submit Change': 'Cancel Request'}</span>
+                                    <span>{action === 'approve' ? 'Approve' : action === 'reject' ? 'Reject' : action === 'request-change' ? 'Request Change' : 'Cancel Request'}</span>
                                 )}
                             </button>
                         </div>

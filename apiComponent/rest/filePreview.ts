@@ -14,28 +14,46 @@ interface FilePreviewResponse {
  */
 export async function getFilePreviewUrl(fileId: string): Promise<FilePreviewResponse> {
     try {
-        const response = await httpClient.get(`/api/Files/${fileId}/preview`);
+        // Try preview endpoint first
+        try {
+            const response = await httpClient.get(`/Files/${fileId}/preview`);
 
-        if (response.status !== 200) {
-            throw new Error(`Failed to get preview URL: ${response.status}`);
+            const previewData = response.data as any;
+            if (response.status === 200 && previewData?.previewUrl) {
+                return {
+                    previewUrl: previewData.previewUrl,
+                    expiresIn: previewData.expiresIn || 3600,
+                    fileName: previewData.fileName || '',
+                    fileSize: previewData.fileSize || 0,
+                    mimeType: previewData.mimeType || 'application/octet-stream'
+                };
+            }
+        } catch (previewError) {
+            // Fallback to download endpoint
         }
 
-        const data = response.data as FilePreviewResponse;
+        // Fallback to download endpoint with presigned URL
+        const downloadResponse = await httpClient.get(`/Files/${fileId}/download?usePresignedUrl=true`);
+
+        if (downloadResponse.status !== 200) {
+            throw new Error(`Failed to get download URL: ${downloadResponse.status}`);
+        }
+
+        const data = downloadResponse.data as any;
 
         // Validate response structure
-        if (!data.previewUrl) {
-            throw new Error('Invalid response: previewUrl not found');
+        if (!data.presignedUrl) {
+            throw new Error('Invalid response: presignedUrl not found');
         }
 
         return {
-            previewUrl: data.previewUrl,
+            previewUrl: data.presignedUrl,
             expiresIn: data.expiresIn || 3600,
             fileName: data.fileName || '',
             fileSize: data.fileSize || 0,
             mimeType: data.mimeType || 'application/octet-stream'
         };
     } catch (error) {
-        console.error('Error getting preview URL:', error);
         throw error;
     }
 }
@@ -48,7 +66,6 @@ export async function getFilePreviewUrl(fileId: string): Promise<FilePreviewResp
 //         const response = await httpClient.get(`/api/Files/${fileId}/can-preview`);
 //         return response.status === 200 && response.data?.canPreview === true;
 //     } catch (error) {
-//         console.error('Error checking preview availability:', error);
 //         return false;
 //     }
 // }

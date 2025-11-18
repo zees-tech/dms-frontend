@@ -34,7 +34,7 @@ export const authService = {
     async getCurrentUser(): Promise<User | null> {
         // Get user from stored login response instead of calling API
         const storedResponse = this.getStoredLoginResponse();
-        
+
         if (!storedResponse || !storedResponse.user) {
             // Clean up if data is invalid
             localStorage.removeItem('auth-token');
@@ -65,7 +65,6 @@ export const authService = {
         try {
             return JSON.parse(storedResponse);
         } catch (error) {
-            console.error('Error parsing stored auth response:', error);
             localStorage.removeItem('auth-response');
             return null;
         }

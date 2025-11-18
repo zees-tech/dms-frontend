@@ -80,14 +80,12 @@ export default function NotificationBell() {
 
     const handleApproval = async (notification: Notification) => {
         if (!notification.relatedEntityId || processingApproval === notification.id) {
-            console.error('Missing relatedEntityId for notification:', notification);
             alert('Cannot approve: Request ID is missing.');
             return;
         }
 
         setProcessingApproval(notification.id);
         try {
-            console.log('Processing approval for requestId:', notification.relatedEntityId);
 
             const rolePrefix = getRolePrefix(user!.role);
             // Mark notification as read and refresh
@@ -101,11 +99,9 @@ export default function NotificationBell() {
             //     // Optionally refresh notifications
             //     fetchNotifications(0, 10);
             // } else {
-            //     console.error('No data returned from ProcessRequest');
             //     alert('Failed to approve request: No data returned.');
             // }
         } catch (error) {
-            console.error('Error approving request:', error);
             alert(`An error occurred while approving the request: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setProcessingApproval(null);

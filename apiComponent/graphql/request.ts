@@ -101,7 +101,7 @@ export const ChangeRequested = async (
     if (!client) client = graphqlClient;
 
     // Map action strings to RequestStepStatus enum values
-   
+
     const response = await client.post<{
       data?: ProcessRequestMutation;
       errors?: Array<{ message: string }>;
@@ -112,6 +112,38 @@ export const ChangeRequested = async (
         action: RequestStatus.ChangesRequested,
         comments,
         reason
+      },
+    });
+    return {
+      data: response.data?.data || null,
+      error: null,
+    };
+  } catch (err) {
+    return { data: null, error: err as Error };
+  }
+};
+
+export const ResubmitRequestWithFile = async (
+  requestId: string,
+  file: File,
+  comments: string | null = null,
+  client: ReturnType<typeof axios.create> | undefined = undefined
+): Promise<{ data: ProcessRequestMutation | null; error: Error | null }> => {
+  try {
+    if (!client) client = graphqlClient;
+
+    // For resubmit, we use the ProcessRequest mutation with approve action
+    // The file upload should be handled separately by the backend
+    const response = await client.post<{
+      data?: ProcessRequestMutation;
+      errors?: Array<{ message: string }>;
+    }>("", {
+      query: print(ProcessRequestDocument),
+      variables: {
+        requestId,
+        action: RequestStatus.Approved,
+        comments,
+        reason: null
       },
     });
     return {

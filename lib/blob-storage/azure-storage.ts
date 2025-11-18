@@ -27,7 +27,7 @@ export class AzureStorageService implements BlobStorageService {
 
       // Get container client
       const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
-      
+
       // Ensure container exists
       await containerClient.createIfNotExists({
         access: 'blob', // Public read access
@@ -71,7 +71,6 @@ export class AzureStorageService implements BlobStorageService {
         metadata: fileMetadata,
       };
     } catch (error) {
-      console.error('Azure Blob Storage upload error:', error);
       return {
         success: false,
         fileName: file.name,
@@ -84,11 +83,10 @@ export class AzureStorageService implements BlobStorageService {
     try {
       const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
       const blockBlobClient = containerClient.getBlockBlobClient(key);
-      
+
       await blockBlobClient.delete();
       return true;
     } catch (error) {
-      console.error('Azure Blob Storage delete error:', error);
       return false;
     }
   }
@@ -109,10 +107,10 @@ export class AzureStorageService implements BlobStorageService {
     try {
       // Generate blob name with folder structure
       const blobName = `${folderId}/${fileName}`;
-      
+
       // Get container client
       const containerClient = this.blobServiceClient.getContainerClient(this.containerName);
-      
+
       // Ensure container exists
       await containerClient.createIfNotExists({
         access: 'blob', // Public read access
@@ -124,12 +122,12 @@ export class AzureStorageService implements BlobStorageService {
       // Generate SAS token for upload
       const startsOn = new Date();
       const expiresOn = new Date(startsOn.getTime() + expiresIn * 1000);
-      
+
       // Create SAS permissions for read and write
       const sasPermissions = new BlobSASPermissions();
       sasPermissions.read = true;
       sasPermissions.write = true;
-      
+
       // Generate SAS token with write permissions
       const sasToken = await blockBlobClient.generateSasUrl({
         permissions: sasPermissions,
@@ -144,7 +142,6 @@ export class AzureStorageService implements BlobStorageService {
         expiresAt: expiresOn.toISOString(),
       };
     } catch (error) {
-      console.error('Azure Blob Storage presigned URL generation error:', error);
       throw new Error('Failed to generate presigned URL for Azure Blob Storage');
     }
   }

@@ -134,7 +134,6 @@ export default function RequestCard({
       );
 
       if (error) {
-        console.error(`Failed to ${currentAction} request:`, error);
         alert(`Failed to ${currentAction} request. Please try again.`);
         return;
       }
@@ -144,7 +143,6 @@ export default function RequestCard({
         handleCloseActionModal();
       }
     } catch (error) {
-      console.error(`Error ${currentAction}ing request:`, error);
       alert(`An error occurred while ${currentAction}ing the request.`);
     } finally {
       setIsProcessing(false);

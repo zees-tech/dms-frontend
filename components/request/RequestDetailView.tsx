@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { User, Calendar, CheckCircle, XCircle, Eye, Edit } from 'lucide-react';
 import { Request } from '@/apiComponent/graphql/generated/graphql';
-import { ProcessRequest, ChangeRequested } from '@/apiComponent/graphql/request';
+import { ProcessRequest, ChangeRequested, ResubmitRequestWithFile } from '@/apiComponent/graphql/request';
+import { localClient } from '@/utils/client';
 import DocumentPreview from './DocumentPreview';
 import RequestActionModal from './RequestActionModal';
+import ResubmitRequestModal from './ResubmitRequestModal';
 import { smartDownloadFile } from '@/apiComponent/rest/fileDownload';
 import { getRolePrefix } from '@/utils/role-route';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLoading } from '@/contexts/LoadingContext';
 
 interface RequestDetailViewProps {
   request: Request;
@@ -24,17 +27,22 @@ export default function RequestDetailView({
   const { isDark } = useTheme();
   const router = useRouter();
   const { user } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingAction, setProcessingAction] = useState<'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit' | null>(null);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
-  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit' | null>(null);
+  const [isResubmitModalOpen, setIsResubmitModalOpen] = useState(false);
+  const [currentAction, setCurrentAction] = useState<'approve' | 'reject' | 'request-change' | 'cancel' | null>(null);
 
 
 
-  const handleOpenActionModal = (action: 'approve' | 'reject' | 'request-change' | 'cancel' | 'resubmit') => {
+  const handleOpenActionModal = (action: 'approve' | 'reject' | 'request-change' | 'cancel') => {
     setCurrentAction(action);
     setIsActionModalOpen(true);
+  };
+
+  const handleOpenResubmitModal = () => {
+    setIsResubmitModalOpen(true);
   };
 
   const handleCloseActionModal = () => {
@@ -44,25 +52,24 @@ export default function RequestDetailView({
     }
   };
 
+  const handleCloseResubmitModal = () => {
+    if (!isProcessing) {
+      setIsResubmitModalOpen(false);
+    }
+  };
+
   const handleSubmitAction = async (comment: string) => {
     if (isProcessing || !currentAction) return;
 
     setIsProcessing(true);
-    setProcessingAction(currentAction);
+    showLoading(`${currentAction === 'approve' ? 'Approving' : currentAction === 'reject' ? 'Rejecting' : currentAction === 'request-change' ? 'Requesting changes for' : 'Canceling'} request...`);
 
     try {
       let data, error;
 
-      if (currentAction === 'resubmit' && request.file != null) {
-        alert('Please provide a update document.');
-        setIsProcessing(false);
-        setProcessingAction(null);
-        return;
-      }
       if ((currentAction === 'reject' || currentAction === 'request-change') && comment.trim() === '') {
         alert('Please provide a reason for rejection.');
         setIsProcessing(false);
-        setProcessingAction(null);
         return;
       }
 
@@ -77,7 +84,7 @@ export default function RequestDetailView({
       } else {
         const result = await ProcessRequest(
           request.id,
-          currentAction === 'resubmit' ? 'approve' : currentAction,
+          currentAction,
           comment || null,
           currentAction === 'reject' ? comment || null : null
         );
@@ -86,7 +93,6 @@ export default function RequestDetailView({
       }
 
       if (error) {
-        console.error(`Failed to ${currentAction} request:`, error);
         alert(`Failed to ${currentAction} request. Please try again.`);
         return;
       }
@@ -98,11 +104,59 @@ export default function RequestDetailView({
         router.push(`${getRolePrefix(user?.role ?? '')}/requests/sets`);
       }
     } catch (error) {
-      console.error(`Error ${currentAction}ing request:`, error);
       alert(`An error occurred while ${currentAction}ing the request.`);
     } finally {
       setIsProcessing(false);
-      setProcessingAction(null);
+      hideLoading();
+    }
+  };
+
+  const handleResubmitRequest = async (file: File, comment: string) => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    showLoading('Uploading file and resubmitting request...');
+
+    try {
+      // Step 1: Upload the file using FormData
+      const formData = new FormData();
+      formData.append('files', file);
+      formData.append('requestId', request.id);
+
+      const uploadResponse = await localClient.post('/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (!uploadResponse.data || (uploadResponse.data as any).failedFiles?.length > 0) {
+        throw new Error('File upload failed');
+      }
+
+      // Step 2: Resubmit the request with comment
+      const { data, error } = await ResubmitRequestWithFile(
+        request.id,
+        file,
+        comment
+      );
+
+      if (error) {
+        alert('Failed to resubmit request. Please try again.');
+        return;
+      }
+
+      if (data?.processRequest) {
+        onRequestProcessed?.();
+        handleCloseResubmitModal();
+        alert('Request resubmitted successfully!');
+        // Redirect to requests page after successful resubmission
+        router.push(`${getRolePrefix(user?.role ?? '')}/requests/sets`);
+      }
+    } catch (error) {
+      alert('An error occurred while resubmitting the request.');
+    } finally {
+      setIsProcessing(false);
+      hideLoading();
     }
   };
 
@@ -112,12 +166,14 @@ export default function RequestDetailView({
     }
   };
 
-  const handleDownloadDocument = async () => {
-    if (request.file) {
+  const handleDownloadDocument = async (fileId?: string, fileName?: string) => {
+    const downloadFileId = fileId || request.file?.id;
+    const downloadFileName = fileName || request.file?.name;
+
+    if (downloadFileId && downloadFileName) {
       try {
-        await smartDownloadFile(request.file.id, request.file.name);
+        await smartDownloadFile(downloadFileId, downloadFileName);
       } catch (error) {
-        console.error('Download failed:', error);
         alert('Failed to download document. Please try again.');
       }
     }
@@ -327,7 +383,7 @@ export default function RequestDetailView({
             {request.status === 'CHANGES_REQUESTED' && (
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleOpenActionModal('resubmit')}
+                  onClick={handleOpenResubmitModal}
                   disabled={isProcessing}
                   className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors ${isProcessing ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
                     } text-white text-sm`}
@@ -367,7 +423,7 @@ export default function RequestDetailView({
             name: request.file.name,
             mimeType: request.file.mimeType,
             size: request.file.size,
-            contentUrl: request.file.contentUrl || undefined,
+            contentUrl: (request.file.contentUrl && request.file.contentUrl.trim() !== '') ? request.file.contentUrl : undefined,
             description: request.file.description || undefined
           }}
           isOpen={isPreviewOpen}
@@ -386,6 +442,24 @@ export default function RequestDetailView({
           isLoading={isProcessing}
         />
       )}
+
+      {/* Resubmit Request Modal */}
+      <ResubmitRequestModal
+        isOpen={isResubmitModalOpen}
+        onClose={handleCloseResubmitModal}
+        onSubmit={handleResubmitRequest}
+        isLoading={isProcessing}
+        currentFileName={request.file?.name}
+        currentFile={request.file ? {
+          id: request.file.id,
+          name: request.file.name,
+          mimeType: request.file.mimeType,
+          size: request.file.size,
+          contentUrl: (request.file.contentUrl && request.file.contentUrl.trim() !== '') ? request.file.contentUrl : undefined,
+          description: request.file.description || undefined
+        } : undefined}
+        onDownload={handleDownloadDocument}
+      />
     </div>
   );
 }

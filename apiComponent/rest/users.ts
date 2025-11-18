@@ -6,7 +6,6 @@ export async function users() {
     const response = await httpClient.get<User[]>("/api/Users");
     return response.data;
   } catch (error) {
-    console.error("Error fetching users:", error);
     throw error;
   }
 }

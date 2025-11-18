@@ -9,7 +9,6 @@ export async function login(username: string, password: string): Promise<LoginRe
     });
     return response.data;
   } catch (error) {
-    console.error("Login error:", error);
     throw error;
   }
 }

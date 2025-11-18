@@ -53,7 +53,6 @@ export const createFile = async (
     });
     return { data: response.data?.data || null, error: null };
   } catch (err) {
-    console.error("Create File Error: ", err);
     return { data: null, error: err as Error };
   }
 };
@@ -78,7 +77,6 @@ export const updateFile = async (
     });
     return { data: response.data?.data || null, error: null };
   } catch (err) {
-    console.error("Update File Error: ", err);
     return { data: null, error: err as Error };
   }
 };

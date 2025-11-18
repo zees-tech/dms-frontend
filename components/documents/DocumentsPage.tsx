@@ -106,7 +106,6 @@ export default function DocumentsPage() {
         setBreadcrumb([newFileSystem]);
 
       } catch (error) {
-        console.error('Error fetching data:', error);
         pushToast({
           message: 'Failed to load documents',
           type: 'error',
@@ -128,7 +127,6 @@ export default function DocumentsPage() {
       );
       setHasUpdatePermission(updatePermission);
     } catch (error) {
-      console.error('Error checking folder permissions:', error);
       pushToast({
         message: 'Failed to verify folder permissions',
         type: 'error',
@@ -201,7 +199,6 @@ export default function DocumentsPage() {
       setBreadcrumb(newBreadcrumb);
 
     } catch (error) {
-      console.error('Error fetching folder files:', error);
       pushToast({
         message: 'Failed to load folder contents',
         type: 'error',
@@ -257,7 +254,6 @@ export default function DocumentsPage() {
       setBreadcrumb(breadcrumb.slice(0, folderIndex + 1));
 
     } catch (error) {
-      console.error('Error fetching folder files:', error);
       pushToast({
         message: 'Failed to load folder contents',
         type: 'error',
@@ -423,7 +419,6 @@ export default function DocumentsPage() {
             url: presignedData.presignedUrl
           };
         } catch (error) {
-          console.warn('Could not get presigned URL for preview:', error);
           pushToast({
             message: 'Preview URL unavailable, showing file details',
             type: 'warning',
@@ -435,7 +430,6 @@ export default function DocumentsPage() {
       setPreviewFile(fileWithUrl);
       setIsPreviewOpen(true);
     } catch (error) {
-      console.error('Error opening file preview:', error);
       pushToast({
         message: 'Failed to open file preview',
         type: 'error',
@@ -496,7 +490,6 @@ export default function DocumentsPage() {
         type: 'success',
       });
     } catch (error) {
-      console.error('Error creating folder:', error);
       pushToast({
         message: `Failed to create folder "${name}"`,
         type: 'error',
@@ -556,7 +549,6 @@ export default function DocumentsPage() {
         });
       }
     } catch (error) {
-      console.error('Error refreshing files after upload:', error);
       pushToast({
         message: 'Files uploaded but failed to refresh file list',
         type: 'warning',
@@ -578,8 +570,7 @@ export default function DocumentsPage() {
 
       await smartDownloadFile(fileId, fileName, {
         onProgress: (progress) => {
-          // Log progress to console for debugging
-          console.log(`Download progress: ${progress.percentage}% (${formatBytes(progress.loaded)}/${formatBytes(progress.total)})`);
+          // Progress tracking
         }
       });
 
@@ -588,7 +579,6 @@ export default function DocumentsPage() {
         type: 'success',
       });
     } catch (error) {
-      console.error('Error downloading file:', error);
       pushToast({
         message: `Failed to download file "${fileName}"`,
         type: 'error',
